@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<!-- Structure of `nmap -sn -oX -` output (nmap 7.9x); addresses are documentation placeholders. -->
+<nmaprun scanner="nmap" args="nmap -sn -oX - 192.168.100.0/24" start="1763150000" version="7.94" xmloutputversion="1.05">
+<verbose level="0"/>
+<debugging level="0"/>
+<host><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="192.168.100.1" addrtype="ipv4"/>
+<address addr="AA:BB:CC:00:00:01" addrtype="mac" vendor="Huawei Technologies"/>
+<hostnames>
+</hostnames>
+<times srtt="1200" rttvar="5000" to="100000"/>
+</host>
+<host><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="192.168.100.20" addrtype="ipv4"/>
+<address addr="AA:BB:CC:00:00:20" addrtype="mac"/>
+<hostnames>
+<hostname name="desktop-pc.home" type="PTR"/>
+</hostnames>
+</host>
+<host><status state="down" reason="no-response" reason_ttl="0"/>
+<address addr="192.168.100.30" addrtype="ipv4"/>
+</host>
+<host><status state="up" reason="localhost-response" reason_ttl="0"/>
+<address addr="192.168.100.10" addrtype="ipv4"/>
+<hostnames>
+</hostnames>
+</host>
+<runstats><finished time="1763150003" timestr="Fri Nov 14 21:00:03 2026" summary="Nmap done: 256 IP addresses (3 hosts up) scanned in 3.10 seconds" elapsed="3.10" exit="success"/><hosts up="3" down="253" total="256"/>
+</runstats>
+</nmaprun>

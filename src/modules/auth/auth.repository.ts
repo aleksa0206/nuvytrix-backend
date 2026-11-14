@@ -1,0 +1,90 @@
+import type { Knex } from 'knex';
+import type { AdminRow, SessionRow } from './auth.types';
+
+export class AuthRepository {
+  constructor(private db: Knex) {}
+
+  findAdminByUsername(username: string): Promise<AdminRow | undefined> {
+    return this.db<AdminRow>('admins').where({ username }).first();
+  }
+
+  async upsertAdmin(username: string, passwordHash: string): Promise<void> {
+    await this.db('admins')
+      .insert({ username, password_hash: passwordHash })
+      .onConflict('username')
+      .merge({
+        password_hash: passwordHash,
+        failed_login_attempts: 0,
+        locked_until: null,
+        updated_at: this.db.fn.now(),
+      });
+  }
+
+  async recordFailedLogin(adminId: number, maxAttempts: number, lockMinutes: number) {
+    // Counting in SQL keeps concurrent failed attempts from overwriting each other's increment.
+    await this.db('admins')
+      .where({ id: adminId })
+      .update({
+        failed_login_attempts: this.db.raw('failed_login_attempts + 1'),
+        locked_until: this.db.raw(
+          `CASE WHEN failed_login_attempts + 1 >= ? THEN now() + make_interval(mins => ?) ELSE locked_until END`,
+          [maxAttempts, lockMinutes]
+        ),
+      });
+  }
+
+  async recordSuccessfulLogin(adminId: number) {
+    await this.db('admins').where({ id: adminId }).update({
+      failed_login_attempts: 0,
+      locked_until: null,
+      last_login_at: this.db.fn.now(),
+    });
+  }
+
+  async createSession(session: {
+    adminId: number;
+    tokenHash: string;
+    expiresAt: Date;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<void> {
+    await this.db('sessions').insert({
+      admin_id: session.adminId,
+      token_hash: session.tokenHash,
+      expires_at: session.expiresAt,
+      ip_address: session.ipAddress ?? null,
+      user_agent: session.userAgent?.slice(0, 512) ?? null,
+    });
+  }
+
+  findSessionWithAdmin(
+    tokenHash: string
+  ): Promise<(SessionRow & { username: string }) | undefined> {
+    return this.db('sessions as s')
+      .join('admins as a', 'a.id', 's.admin_id')
+      .where('s.token_hash', tokenHash)
+      .first('s.*', 'a.username');
+  }
+
+  async touchSession(sessionId: number, minimumAgeSeconds: number): Promise<void> {
+    await this.db('sessions')
+      .where({ id: sessionId })
+      .andWhere(
+        'last_seen_at',
+        '<',
+        this.db.raw(`now() - make_interval(secs => ?)`, [minimumAgeSeconds])
+      )
+      .update({ last_seen_at: this.db.fn.now() });
+  }
+
+  async deleteSession(sessionId: number): Promise<void> {
+    await this.db('sessions').where({ id: sessionId }).delete();
+  }
+
+  async deleteExpiredSessions(idleMinutes: number): Promise<number> {
+    return this.db('sessions')
+      .where('expires_at', '<', this.db.fn.now())
+      .orWhere('last_seen_at', '<', this.db.raw(`now() - make_interval(mins => ?)`, [idleMinutes]))
+      .delete();
+  }
+}
