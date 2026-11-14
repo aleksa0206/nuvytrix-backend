@@ -57,6 +57,26 @@ describe('authentication', () => {
     expect(res.status).toBe(423);
   });
 
+  it('locks per username and client address, not account-wide, and locks unknown names too', async () => {
+    await container.authService.createOrResetAdmin(TEST_ADMIN.username, TEST_ADMIN.password);
+    const attacker = { ipAddress: '192.168.100.66' };
+    for (let attempt = 0; attempt < MAX_FAILED_ATTEMPTS; attempt++) {
+      await expect(container.authService.login('admin', 'wrong', attacker)).rejects.toThrow();
+      await expect(container.authService.login('ghost', 'wrong', attacker)).rejects.toThrow();
+    }
+
+    await expect(
+      container.authService.login('admin', TEST_ADMIN.password, attacker)
+    ).rejects.toMatchObject({ statusCode: 423 });
+    await expect(container.authService.login('ghost', 'wrong', attacker)).rejects.toMatchObject({
+      statusCode: 423,
+    });
+    const fromAdminPc = await container.authService.login('admin', TEST_ADMIN.password, {
+      ipAddress: '192.168.100.20',
+    });
+    expect(fromAdminPc.admin.username).toBe('admin');
+  });
+
   it('protects endpoints and invalidates the session on the server at logout', async () => {
     expect((await request(app).get('/api/auth/me')).status).toBe(401);
 

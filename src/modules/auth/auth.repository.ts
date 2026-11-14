@@ -12,33 +12,11 @@ export class AuthRepository {
     await this.db('admins')
       .insert({ username, password_hash: passwordHash })
       .onConflict('username')
-      .merge({
-        password_hash: passwordHash,
-        failed_login_attempts: 0,
-        locked_until: null,
-        updated_at: this.db.fn.now(),
-      });
-  }
-
-  async recordFailedLogin(adminId: number, maxAttempts: number, lockMinutes: number) {
-    // Counting in SQL keeps concurrent failed attempts from overwriting each other's increment.
-    await this.db('admins')
-      .where({ id: adminId })
-      .update({
-        failed_login_attempts: this.db.raw('failed_login_attempts + 1'),
-        locked_until: this.db.raw(
-          `CASE WHEN failed_login_attempts + 1 >= ? THEN now() + make_interval(mins => ?) ELSE locked_until END`,
-          [maxAttempts, lockMinutes]
-        ),
-      });
+      .merge({ password_hash: passwordHash, updated_at: this.db.fn.now() });
   }
 
   async recordSuccessfulLogin(adminId: number) {
-    await this.db('admins').where({ id: adminId }).update({
-      failed_login_attempts: 0,
-      locked_until: null,
-      last_login_at: this.db.fn.now(),
-    });
+    await this.db('admins').where({ id: adminId }).update({ last_login_at: this.db.fn.now() });
   }
 
   async createSession(session: {

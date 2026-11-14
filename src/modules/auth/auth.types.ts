@@ -2,8 +2,6 @@ export interface AdminRow {
   id: number;
   username: string;
   password_hash: string;
-  failed_login_attempts: number;
-  locked_until: Date | null;
   last_login_at: Date | null;
 }
 

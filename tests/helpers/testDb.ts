@@ -1,12 +1,14 @@
 import request from 'supertest';
 import app from '../../src/app';
 import { db } from '../../src/config/db';
-import { container } from '../../src/container';
+import { container, resetContainer } from '../../src/container';
 import { runMigrations } from '../../src/database/migrate';
 
 let migrated = false;
 
+/** Empties every table and rebuilds the container, which also clears in-memory login lockouts. */
 export async function prepareDatabase(): Promise<void> {
+  resetContainer();
   if (!migrated) {
     await runMigrations();
     migrated = true;

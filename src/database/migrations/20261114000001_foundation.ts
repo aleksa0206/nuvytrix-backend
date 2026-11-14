@@ -5,8 +5,6 @@ export async function up(knex: Knex): Promise<void> {
     table.increments('id').primary();
     table.string('username', 64).notNullable().unique();
     table.string('password_hash', 100).notNullable();
-    table.integer('failed_login_attempts').notNullable().defaultTo(0);
-    table.timestamp('locked_until', { useTz: true });
     table.timestamp('last_login_at', { useTz: true });
     table.timestamps(true, true);
   });

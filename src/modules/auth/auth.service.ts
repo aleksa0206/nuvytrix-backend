@@ -9,7 +9,8 @@ import type { AuthenticatedAdmin, RequestContext } from './auth.types';
 export const SESSION_COOKIE = 'nuvytrix_session';
 export const MAX_FAILED_ATTEMPTS = 5;
 export const LOCK_MINUTES = 15;
-const BCRYPT_COST = 12;
+// The minimum cost keeps the test suite fast; it is never used outside NODE_ENV=test.
+const BCRYPT_COST = process.env.NODE_ENV === 'test' ? 4 : 12;
 // Writing last_seen_at on every request would turn each read into a write; a minute of
 // imprecision is irrelevant against an idle timeout measured in tens of minutes.
 const TOUCH_INTERVAL_SECONDS = 60;
@@ -30,6 +31,15 @@ export function hashPassword(password: string): Promise<string> {
 }
 
 export class AuthService {
+  /**
+   * Keyed on (username, client IP) rather than the account alone, so another device on the LAN
+   * cannot lock the administrator out by failing on purpose. Unknown usernames lock the same way
+   * as real ones, so a 423 does not reveal which usernames exist.
+   * ponytail: in-memory, resets on restart and assumes one API instance; per-IP rate limiting
+   * still caps guesses across restarts.
+   */
+  private failedAttempts = new Map<string, { count: number; lockedUntil: number }>();
+
   constructor(
     private authRepository: AuthRepository,
     private auditService: AuditService,
@@ -37,24 +47,23 @@ export class AuthService {
   ) {}
 
   async login(username: string, password: string, context: RequestContext) {
+    const attemptKey = `${username.toLowerCase()}|${context.ipAddress ?? 'unknown'}`;
     const admin = await this.authRepository.findAdminByUsername(username);
+    // Runs before the lock check so a locked attempt costs the same time as any other.
+    const passwordMatches = await bcrypt.compare(password, admin?.password_hash ?? DUMMY_HASH);
 
-    if (admin?.locked_until && admin.locked_until > new Date()) {
+    if (this.isLocked(attemptKey)) {
       await this.auditService.record({
-        adminId: admin.id,
+        adminId: admin?.id ?? null,
         action: 'auth.login_failed',
-        details: { reason: 'locked' },
+        details: { username, reason: 'locked' },
         ipAddress: context.ipAddress,
       });
       throw new LockedError();
     }
 
-    const passwordMatches = await bcrypt.compare(password, admin?.password_hash ?? DUMMY_HASH);
-
     if (!admin || !passwordMatches) {
-      if (admin) {
-        await this.authRepository.recordFailedLogin(admin.id, MAX_FAILED_ATTEMPTS, LOCK_MINUTES);
-      }
+      this.recordFailure(attemptKey);
       await this.auditService.record({
         adminId: admin?.id ?? null,
         action: 'auth.login_failed',
@@ -64,6 +73,7 @@ export class AuthService {
       throw new UnauthorizedError(ErrorCode.INVALID_CREDENTIALS);
     }
 
+    this.failedAttempts.delete(attemptKey);
     await this.authRepository.recordSuccessfulLogin(admin.id);
 
     const token = randomBytes(32).toString('base64url');
@@ -83,6 +93,23 @@ export class AuthService {
     });
 
     return { token, expiresAt, admin: { username: admin.username } };
+  }
+
+  private isLocked(attemptKey: string): boolean {
+    const state = this.failedAttempts.get(attemptKey);
+    return state !== undefined && state.lockedUntil > Date.now();
+  }
+
+  private recordFailure(attemptKey: string): void {
+    const now = Date.now();
+    for (const [key, state] of this.failedAttempts) {
+      if (state.lockedUntil !== 0 && state.lockedUntil <= now) this.failedAttempts.delete(key);
+    }
+    const count = (this.failedAttempts.get(attemptKey)?.count ?? 0) + 1;
+    this.failedAttempts.set(attemptKey, {
+      count,
+      lockedUntil: count >= MAX_FAILED_ATTEMPTS ? now + LOCK_MINUTES * 60_000 : 0,
+    });
   }
 
   /** Fail-closed: anything other than a live, unexpired, recently used session is rejected. */
