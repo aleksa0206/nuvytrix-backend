@@ -14,6 +14,18 @@ function startBackgroundJobs() {
       .catch((err) => logger.error({ err }, 'Session cleanup failed'));
   }, HOURLY_MS).unref();
 
+  setInterval(() => {
+    container.monitoringService
+      .runChecks()
+      .catch((err) => logger.error({ err }, 'Monitoring round failed'));
+  }, env.MONITORING_INTERVAL_SECONDS * 1000).unref();
+
+  setInterval(() => {
+    container.monitoringService
+      .deleteExpiredResults()
+      .catch((err) => logger.error({ err }, 'Monitoring retention cleanup failed'));
+  }, HOURLY_MS).unref();
+
   if (env.DISCOVERY_INTERVAL_MINUTES > 0) {
     setInterval(
       () => {
@@ -28,6 +40,7 @@ function startBackgroundJobs() {
 
 async function main() {
   await runMigrations();
+  await container.monitoringService.syncManagedTargets();
   const interrupted = await container.devicesService.failInterruptedScans();
   if (interrupted > 0) logger.warn({ interrupted }, 'Marked interrupted discovery scans as failed');
 

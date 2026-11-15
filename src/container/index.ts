@@ -11,9 +11,17 @@ import { FirewallRepository } from '../modules/firewall/firewall.repository';
 import { FirewallService } from '../modules/firewall/firewall.service';
 import { PoliciesRepository } from '../modules/firewall/policies.repository';
 import { PoliciesService } from '../modules/firewall/policies.service';
+import { MonitoringRepository } from '../modules/monitoring/monitoring.repository';
+import { MonitoringService } from '../modules/monitoring/monitoring.service';
+import { SystemProber, type Prober } from '../modules/monitoring/probes';
+import { AdGuardClient } from '../modules/dns/adguardClient';
+import { DnsService } from '../modules/dns/dns.service';
+import { OverviewService } from '../modules/overview/overview.service';
 
 export interface ContainerOverrides {
   hostDiscoverer?: HostDiscoverer;
+  prober?: Prober;
+  adguardClient?: AdGuardClient;
 }
 
 class Container {
@@ -31,6 +39,12 @@ class Container {
 
   public policiesRepository: PoliciesRepository;
   public policiesService: PoliciesService;
+
+  public monitoringRepository: MonitoringRepository;
+  public monitoringService: MonitoringService;
+
+  public dnsService: DnsService;
+  public overviewService: OverviewService;
 
   constructor(overrides: ContainerOverrides = {}) {
     this.auditRepository = new AuditRepository(db);
@@ -69,6 +83,39 @@ class Container {
     this.policiesService = new PoliciesService(this.policiesRepository, this.auditService, {
       routerHost: env.ROUTER_HOST,
     });
+
+    this.monitoringRepository = new MonitoringRepository(db);
+    this.monitoringService = new MonitoringService(
+      this.monitoringRepository,
+      overrides.prober ?? new SystemProber(env.PING_PATH),
+      this.auditService,
+      { routerHost: env.ROUTER_HOST, retentionDays: env.MONITORING_RETENTION_DAYS }
+    );
+
+    this.dnsService = new DnsService(
+      overrides.adguardClient ??
+        new AdGuardClient({
+          url: env.ADGUARD_URL,
+          username: env.ADGUARD_USERNAME,
+          password: env.ADGUARD_PASSWORD,
+        })
+    );
+
+    this.overviewService = new OverviewService(
+      db,
+      this.devicesService,
+      this.firewallService,
+      this.policiesService,
+      this.monitoringService,
+      this.dnsService,
+      {
+        routerHost: env.ROUTER_HOST,
+        nmapPrivileged: env.NMAP_PRIVILEGED,
+        discoveryIntervalMinutes: env.DISCOVERY_INTERVAL_MINUTES,
+        monitoringIntervalSeconds: env.MONITORING_INTERVAL_SECONDS,
+        allowedScanCidrs: env.ALLOWED_SCAN_CIDRS,
+      }
+    );
   }
 }
 

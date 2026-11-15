@@ -14,6 +14,9 @@ import auditRoutes from './modules/audit/audit.routes';
 import healthRoutes from './modules/health/health.routes';
 import devicesRoutes from './modules/devices/devices.routes';
 import firewallRoutes from './modules/firewall/firewall.routes';
+import monitoringRoutes from './modules/monitoring/monitoring.routes';
+import dnsRoutes from './modules/dns/dns.routes';
+import overviewRoutes from './modules/overview/overview.routes';
 import type {} from './types/express';
 
 const app = express();
@@ -42,8 +45,11 @@ api.use('/health', healthRoutes);
 api.use(apiRateLimiter);
 api.use('/auth', authRoutes);
 api.use('/audit-logs', auditRoutes);
-api.use(devicesRoutes);
 api.use('/firewall', firewallRoutes);
+api.use('/monitoring', monitoringRoutes);
+api.use('/dns', dnsRoutes);
+api.use(overviewRoutes);
+api.use(devicesRoutes);
 api.use(notFoundHandler);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
