@@ -90,7 +90,7 @@ export class FirewallService {
     const rejected = await this.firewallRepository.findRejectedLines(importId);
     return {
       ...toImportDto(importRow),
-      rejectedLines: rejected.map((line) => ({
+      rejected: rejected.map((line) => ({
         lineNumber: line.line_number,
         reason: line.reason,
         rawLine: line.raw_line,

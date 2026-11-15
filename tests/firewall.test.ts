@@ -55,8 +55,9 @@ describe('firewall log import', () => {
     ]);
 
     const details = await agent.get(`/api/firewall/imports/${res.body.id}`);
-    expect(details.body.rejectedLines).toHaveLength(2);
-    expect(details.body.rejectedLines[1]).toMatchObject({ lineNumber: 6, rawLine: 'broken line' });
+    expect(details.body.rejectedLines).toBe(2);
+    expect(details.body.rejected).toHaveLength(2);
+    expect(details.body.rejected[1]).toMatchObject({ lineNumber: 6, rawLine: 'broken line' });
   });
 
   it('does not duplicate events when the same or an overlapping export is uploaded again', async () => {
