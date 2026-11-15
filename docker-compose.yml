@@ -22,7 +22,11 @@ services:
       retries: 10
 
   api:
-    build: .
+    build:
+      context: .
+      # On my server, bridge-network containers can't reach the host's DNS resolvers (Tailscale
+      # MagicDNS), so package downloads during the build use the host network instead.
+      network: host
     restart: unless-stopped
     # Host networking puts nmap on the LAN itself; inside a bridge network it could not see
     # ARP replies and therefore no MAC addresses.
@@ -43,7 +47,9 @@ services:
         condition: service_healthy
 
   web:
-    build: ../nuvytrix-frontend
+    build:
+      context: ../nuvytrix-frontend
+      network: host
     restart: unless-stopped
     # Reachable from the LAN and over Tailscale. Never forward this port on the router or put it
     # behind a public tunnel: the app can scan the network and shows the router's firewall log.
