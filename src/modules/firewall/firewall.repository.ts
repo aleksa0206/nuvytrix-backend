@@ -21,14 +21,36 @@ export interface ImportFile {
   sha256: string;
 }
 
+/** Thrown inside the transaction to roll back an import that added nothing. */
+class NothingNewError extends Error {}
+
 export class FirewallRepository {
   constructor(private db: Knex) {}
 
-  /** Stores one upload atomically: either all of its events and its import record, or nothing. */
+  /**
+   * Stores one upload atomically: either all of its events and its import record, or nothing.
+   * With `skipIfNothingNew`, an import that adds no events is rolled back and null is returned, so
+   * periodic reads of the router's rolling log do not create an import record every time.
+   */
   async saveImport(
     file: ImportFile,
     parsed: ParsedLog,
-    importedBy: number
+    importedBy: number | null,
+    options: { skipIfNothingNew?: boolean } = {}
+  ): Promise<FirewallImportRow | null> {
+    try {
+      return await this.writeImport(file, parsed, importedBy, options.skipIfNothingNew ?? false);
+    } catch (err) {
+      if (err instanceof NothingNewError) return null;
+      throw err;
+    }
+  }
+
+  private writeImport(
+    file: ImportFile,
+    parsed: ParsedLog,
+    importedBy: number | null,
+    skipIfNothingNew: boolean
   ): Promise<FirewallImportRow> {
     return this.db.transaction(async (trx) => {
       let first: number | null = null;
@@ -85,6 +107,7 @@ export class FirewallRepository {
           .returning('id');
         inserted += insertedRows.length;
       }
+      if (skipIfNothingNew && inserted === 0) throw new NothingNewError();
 
       const rejectedToStore = parsed.rejected.slice(0, MAX_STORED_REJECTED_LINES);
       for (let start = 0; start < rejectedToStore.length; start += INSERT_CHUNK_SIZE) {

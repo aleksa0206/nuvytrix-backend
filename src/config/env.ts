@@ -66,6 +66,11 @@ const envSchema = z.object({
     .default('Europe/Belgrade')
     .refine(isValidTimeZone, 'must be an IANA time zone such as Europe/Belgrade'),
   ROUTER_HOST: z.string().default(''),
+  // Router web UI account; the router integration is off while either is empty.
+  ROUTER_USERNAME: z.string().default(''),
+  ROUTER_PASSWORD: z.string().default(''),
+  ROUTER_POLL_SECONDS: z.coerce.number().int().min(60).default(300),
+  ROUTER_FIREWALL_LOG_POLL_MINUTES: z.coerce.number().int().min(0).default(15),
   FIREWALL_UPLOAD_MAX_MB: z.coerce.number().positive().max(200).default(20),
 
   PING_PATH: z.string().min(1).default('ping'),

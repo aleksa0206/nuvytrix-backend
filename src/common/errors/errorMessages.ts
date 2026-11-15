@@ -32,4 +32,8 @@ export const ErrorMessages: Record<ErrorCode, string> = {
 
   [ErrorCode.DNS_NOT_CONFIGURED]: 'No DNS provider is configured',
   [ErrorCode.DNS_PROVIDER_UNAVAILABLE]: 'The DNS provider could not be reached',
+
+  [ErrorCode.ROUTER_NOT_CONFIGURED]: 'Router access is not configured',
+  [ErrorCode.ROUTER_NO_DATA]: 'The router has not been read yet',
+  [ErrorCode.ROUTER_POLL_RUNNING]: 'The router is being read right now',
 };

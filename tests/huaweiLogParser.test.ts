@@ -62,7 +62,7 @@ describe('parseLine', () => {
 
   it('accepts ICMP lines without ports', () => {
     const event = expectEvent(
-      '2026-11-14 21:31:28 [Notice] Direction=Public->Local Action=Deny SRC=198.51.100.9 DST=100.108.87.6 PROTO=ICMP'
+      '2026-11-14 21:31:28 [Notice] Direction=Public->Local Action=Deny SRC=198.51.100.9 DST=100.64.0.1 PROTO=ICMP'
     );
     expect(event).toMatchObject({
       protocol: 'ICMP',

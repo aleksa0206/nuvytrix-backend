@@ -26,6 +26,28 @@ function startBackgroundJobs() {
       .catch((err) => logger.error({ err }, 'Monitoring retention cleanup failed'));
   }, HOURLY_MS).unref();
 
+  if (container.routerService.isConfigured) {
+    const pollRouter = () =>
+      container.routerService.poll().catch((err) => logger.error({ err }, 'Router poll failed'));
+    void pollRouter();
+    setInterval(pollRouter, env.ROUTER_POLL_SECONDS * 1000).unref();
+    setInterval(() => {
+      container.routerService
+        .deleteExpiredSamples()
+        .catch((err) => logger.error({ err }, 'Router sample cleanup failed'));
+    }, HOURLY_MS).unref();
+    if (env.ROUTER_FIREWALL_LOG_POLL_MINUTES > 0) {
+      setInterval(
+        () => {
+          container.routerService
+            .importFirewallLog()
+            .catch((err) => logger.warn({ err: err.message }, 'Router firewall log import failed'));
+        },
+        env.ROUTER_FIREWALL_LOG_POLL_MINUTES * 60 * 1000
+      ).unref();
+    }
+  }
+
   if (env.DISCOVERY_INTERVAL_MINUTES > 0) {
     setInterval(
       () => {

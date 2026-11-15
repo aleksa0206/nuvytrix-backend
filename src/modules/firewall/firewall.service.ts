@@ -17,6 +17,7 @@ import type {
   TimeRange,
 } from './firewall.types';
 import { parseLog } from './huaweiLogParser';
+import { stripFirewallLogHeader } from '../router/huaweiParser';
 
 export interface UploadedLogFile {
   originalName: string;
@@ -52,6 +53,8 @@ export class FirewallService {
       parsed,
       adminId
     );
+    // Without skipIfNothingNew the repository always returns a row.
+    if (!saved) throw new Error('Firewall import was not stored');
 
     await this.auditService.record({
       adminId,
@@ -73,6 +76,30 @@ export class FirewallService {
       rejectedSample: parsed.rejected.slice(0, 20),
       rejectedStoredLimit: MAX_STORED_REJECTED_LINES,
     };
+  }
+
+  /**
+   * Imports the log text read from the router's Firewall Log page. The device header is dropped
+   * before parsing, and nothing is recorded when every event was already imported.
+   */
+  async importFromRouter(logText: string) {
+    const content = stripFirewallLogHeader(logText);
+    const parsed = parseLog(content, this.routerTimeZone);
+    if (parsed.events.length === 0 && parsed.rejected.length === 0) return null;
+    const buffer = Buffer.from(content, 'utf8');
+    const saved = await this.firewallRepository.saveImport(
+      {
+        fileName: 'router: firewall log page',
+        sizeBytes: buffer.length,
+        sha256: createHash('sha256').update(buffer).digest('hex'),
+      },
+      parsed,
+      null,
+      { skipIfNothingNew: true }
+    );
+    if (saved)
+      logger.info({ importId: saved.id, ...summaryCounts(saved) }, 'Router firewall log imported');
+    return saved ? toImportDto(saved) : null;
   }
 
   async listImports(pagination: Pagination) {

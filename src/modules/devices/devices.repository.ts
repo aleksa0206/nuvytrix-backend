@@ -157,6 +157,15 @@ export class DevicesRepository {
     return { rows, total: countRow?.count ?? 0 };
   }
 
+  findByMacAddresses(
+    macs: string[]
+  ): Promise<Pick<DeviceRow, 'id' | 'mac_address' | 'custom_name'>[]> {
+    if (macs.length === 0) return Promise.resolve([]);
+    return this.db('devices')
+      .whereIn('mac_address', macs)
+      .select('id', 'mac_address', 'custom_name');
+  }
+
   findDevice(deviceId: number): Promise<DeviceRow | undefined> {
     return this.db<DeviceRow>('devices').where({ id: deviceId }).first();
   }

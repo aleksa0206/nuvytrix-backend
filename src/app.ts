@@ -17,6 +17,7 @@ import firewallRoutes from './modules/firewall/firewall.routes';
 import monitoringRoutes from './modules/monitoring/monitoring.routes';
 import dnsRoutes from './modules/dns/dns.routes';
 import overviewRoutes from './modules/overview/overview.routes';
+import routerRoutes from './modules/router/router.routes';
 import type {} from './types/express';
 
 const app = express();
@@ -48,6 +49,7 @@ api.use('/audit-logs', auditRoutes);
 api.use('/firewall', firewallRoutes);
 api.use('/monitoring', monitoringRoutes);
 api.use('/dns', dnsRoutes);
+api.use('/router', routerRoutes);
 api.use(overviewRoutes);
 api.use(devicesRoutes);
 api.use(notFoundHandler);
