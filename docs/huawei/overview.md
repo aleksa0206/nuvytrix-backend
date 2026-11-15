@@ -64,3 +64,5 @@ See [router-capabilities.md](router-capabilities.md) for the full capability mat
 | [authentication-and-sessions.md](authentication-and-sessions.md) | Login flow, lockout, secrets in pages |
 | [limitations.md](limitations.md) | What is not available and why |
 | [implementation-plan.md](implementation-plan.md) | Backend design and what is implemented |
+| [firewall-management.md](firewall-management.md) | IPv4 filter read/write API analysis |
+| [feature-parity.md](feature-parity.md) | Every router feature vs. Nuvytrix |
