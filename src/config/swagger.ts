@@ -17,6 +17,7 @@ export const swaggerSpec = swaggerJsdoc({
       },
     },
   },
-  // Compiled output has .js route files, development runs the .ts sources.
-  apis: [path.join(__dirname, '../modules/**/*.routes.{ts,js}')],
+  // Compiled output has .js route files, development runs the .ts sources. The glob library
+  // needs forward slashes, which path.join does not produce on Windows.
+  apis: [path.join(__dirname, '../modules/**/*.routes.{ts,js}').split(path.sep).join('/')],
 });

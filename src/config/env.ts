@@ -43,7 +43,11 @@ const envSchema = z.object({
 
   FRONTEND_URL: z.string().url().default('http://localhost:4200'),
   // With 0, X-Forwarded-For is ignored, so clients cannot spoof the IP rate limits are keyed on.
-  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+  // Either a hop count or a comma-separated list of trusted proxy addresses/subnets (Express syntax).
+  TRUST_PROXY: z
+    .string()
+    .default('0')
+    .transform((value) => (/^\d+$/.test(value) ? Number(value) : value)),
   COOKIE_SECURE: booleanString.default(false),
   SESSION_IDLE_MINUTES: z.coerce.number().int().positive().default(30),
   SESSION_MAX_AGE_HOURS: z.coerce.number().int().positive().default(12),

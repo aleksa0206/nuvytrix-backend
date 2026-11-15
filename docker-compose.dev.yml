@@ -1,0 +1,16 @@
+# Local development: only PostgreSQL. Run the API with `npm run dev` and the frontend with `npm start`.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: nuvytrix
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: nuvytrix
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+      - ./scripts/create-test-db.sql:/docker-entrypoint-initdb.d/create-test-db.sql:ro
+
+volumes:
+  pgdata_dev:

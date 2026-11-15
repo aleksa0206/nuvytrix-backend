@@ -1,0 +1,58 @@
+# Production deployment on the always-on Ubuntu server.
+# Expects the frontend repository checked out next to this one (../nuvytrix-frontend).
+# All secrets come from .env (never committed); see .env.example and README.md.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Reachable only from the server itself (the API runs on the host network).
+    ports:
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    # Host networking puts nmap on the LAN itself; inside a bridge network it could not see
+    # ARP replies and therefore no MAC addresses.
+    network_mode: host
+    cap_add:
+      - NET_RAW
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      # Bound to all interfaces so the frontend container can reach it through the Docker
+      # gateway; block port 4000 from the LAN with the host firewall (see README).
+      HOST: 0.0.0.0
+      TRUST_PROXY: loopback, 172.16.0.0/12
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build: ../nuvytrix-frontend
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    environment:
+      API_UPSTREAM: host.docker.internal:4000
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

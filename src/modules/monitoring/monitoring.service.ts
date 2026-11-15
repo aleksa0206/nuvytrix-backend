@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import { AppError, NotFoundError } from '../../common/errors/AppError';
 import { ErrorCode } from '../../common/errors/errorCodes';
 import { logger } from '../../config/logger';
@@ -175,8 +176,12 @@ export class MonitoringService {
       enabled: existing.enabled,
       ...input,
     });
-    if (merged.kind === 'dns' && !merged.dns_query_name) {
-      throw new AppError(ErrorCode.VALIDATION_ERROR, 400, 'DNS targets need a query name');
+    if (merged.kind === 'dns' && (!merged.dns_query_name || isIP(merged.host) === 0)) {
+      throw new AppError(
+        ErrorCode.VALIDATION_ERROR,
+        400,
+        'DNS targets need a resolver IP address and a query name'
+      );
     }
     const row = await this.monitoringRepository.updateTarget(targetId, merged);
     await this.audit('monitoring.target_updated', row!, adminId, context);
