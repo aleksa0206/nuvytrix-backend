@@ -7,6 +7,10 @@ import { AuthService } from '../modules/auth/auth.service';
 import { DevicesRepository } from '../modules/devices/devices.repository';
 import { DevicesService } from '../modules/devices/devices.service';
 import { NmapRunner, type HostDiscoverer } from '../modules/devices/nmapRunner';
+import { FirewallRepository } from '../modules/firewall/firewall.repository';
+import { FirewallService } from '../modules/firewall/firewall.service';
+import { PoliciesRepository } from '../modules/firewall/policies.repository';
+import { PoliciesService } from '../modules/firewall/policies.service';
 
 export interface ContainerOverrides {
   hostDiscoverer?: HostDiscoverer;
@@ -21,6 +25,12 @@ class Container {
 
   public devicesRepository: DevicesRepository;
   public devicesService: DevicesService;
+
+  public firewallRepository: FirewallRepository;
+  public firewallService: FirewallService;
+
+  public policiesRepository: PoliciesRepository;
+  public policiesService: PoliciesService;
 
   constructor(overrides: ContainerOverrides = {}) {
     this.auditRepository = new AuditRepository(db);
@@ -47,6 +57,18 @@ class Container {
         onlineWindowMinutes: env.DEVICE_ONLINE_WINDOW_MINUTES,
       }
     );
+
+    this.firewallRepository = new FirewallRepository(db);
+    this.firewallService = new FirewallService(
+      this.firewallRepository,
+      this.auditService,
+      env.ROUTER_TIMEZONE
+    );
+
+    this.policiesRepository = new PoliciesRepository(db);
+    this.policiesService = new PoliciesService(this.policiesRepository, this.auditService, {
+      routerHost: env.ROUTER_HOST,
+    });
   }
 }
 

@@ -1,6 +1,8 @@
 import type { Knex } from 'knex';
 import * as foundation from './20261114000001_foundation';
 import * as discovery from './20261114000002_discovery';
+import * as firewall from './20261114000003_firewall';
+import * as firewallPolicies from './20261114000004_firewall_policies';
 
 type Migration = Knex.Migration;
 
@@ -9,6 +11,8 @@ type Migration = Knex.Migration;
 const migrations: Record<string, Migration> = {
   '20261114000001_foundation': foundation,
   '20261114000002_discovery': discovery,
+  '20261114000003_firewall': firewall,
+  '20261114000004_firewall_policies': firewallPolicies,
 };
 
 export const migrationSource: Knex.MigrationSource<string> = {

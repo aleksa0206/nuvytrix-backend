@@ -19,6 +19,15 @@ const scanCidrs = z
     return cidrs;
   });
 
+function isValidTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const booleanString = z.enum(['true', 'false']).transform((value) => value === 'true');
 
 const envSchema = z.object({
@@ -47,7 +56,11 @@ const envSchema = z.object({
   DISCOVERY_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
   DEVICE_ONLINE_WINDOW_MINUTES: z.coerce.number().int().positive().default(30),
 
-  ROUTER_TIMEZONE: z.string().min(1).default('Europe/Belgrade'),
+  ROUTER_TIMEZONE: z
+    .string()
+    .min(1)
+    .default('Europe/Belgrade')
+    .refine(isValidTimeZone, 'must be an IANA time zone such as Europe/Belgrade'),
   ROUTER_HOST: z.string().default(''),
   FIREWALL_UPLOAD_MAX_MB: z.coerce.number().positive().max(200).default(20),
 
