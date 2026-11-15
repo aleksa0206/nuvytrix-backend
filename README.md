@@ -4,7 +4,7 @@ REST API for Nuvytrix, the dashboard I use to keep an eye on my home network. It
 
 Frontend: [nuvytrix-frontend](https://github.com/aleksa0206/nuvytrix-frontend) (Angular).
 
-It runs on an Ubuntu server inside the LAN and is not meant to be exposed to the internet.
+It runs on my Ubuntu server at home and is published at nuvytrix.stackvale.space behind Cloudflare Access, so only I can reach it.
 
 ## Tech stack
 
@@ -123,7 +123,7 @@ cd nuvytrix-backend
 cp .env.example .env && chmod 600 .env
 ```
 
-In `.env` set at least a long random `DB_PASSWORD`, `ALLOWED_SCAN_CIDRS`, `ROUTER_HOST` and `FRONTEND_URL=http://<server-ip>:8080`. Then:
+In `.env` set at least a long random `DB_PASSWORD`, `ALLOWED_SCAN_CIDRS`, `ROUTER_HOST`, `FRONTEND_URL=https://nuvytrix.stackvale.space` and `COOKIE_SECURE=true`. Then:
 
 ```bash
 docker compose up -d --build
@@ -133,13 +133,13 @@ docker compose logs -f api
 docker compose down          # stops everything, data stays in the volume
 ```
 
-The UI is on `http://<server-ip>:8080`.
+It's published like my other projects: the web container listens on `127.0.0.1:8080` and Cloudflare Tunnel routes `nuvytrix.stackvale.space` to it. Since this app scans the network and shows the firewall log, the hostname is also behind a Cloudflare Access policy that only lets my email in, so the login form is never the only thing in front of the dashboard.
 
-The API container uses host networking so nmap is really on the LAN, but it only listens on `172.31.250.1`, the gateway of a small Docker network that only the web container joins. PostgreSQL listens on `127.0.0.1`. I also allow only the UI port in the firewall:
+nginx takes the visitor's address from `CF-Connecting-IP`, but only for requests coming from Docker networks, so rate limits and login throttling see real clients instead of the tunnel.
 
-```bash
-sudo ufw allow from 192.168.100.0/24 to any port 8080 proto tcp
-```
+The API container uses host networking so nmap is really on the LAN, but it only listens on `172.31.250.1`, the gateway of a small Docker network that only the web container joins. PostgreSQL listens on `127.0.0.1`.
+
+For LAN-only access without the tunnel, set `WEB_BIND=0.0.0.0` and `COOKIE_SECURE=false` and open `http://<server-ip>:8080`.
 
 ### Updating
 

@@ -45,10 +45,14 @@ services:
   web:
     build: ../nuvytrix-frontend
     restart: unless-stopped
+    # Only on localhost by default: cloudflared on the server is the way in. Set WEB_BIND=0.0.0.0
+    # to reach it from the LAN over plain HTTP instead (COOKIE_SECURE must then be false).
     ports:
-      - '${WEB_PORT:-8080}:80'
+      - '${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:80'
     environment:
       API_UPSTREAM: 172.31.250.1:4000
+      # Only requests from Docker networks (cloudflared) may set the visitor IP via CF-Connecting-IP.
+      REAL_IP_FROM: 172.16.0.0/12
     networks:
       - proxy
     depends_on:
