@@ -130,13 +130,12 @@ docker compose down                                                   # stop (da
 The web UI is at `http://<server-ip>:8080`. Migrations run automatically when the API starts; to
 run them by hand use `docker compose exec api node dist/database/migrate.js`.
 
-**Firewall the API port.** The API container uses host networking (nmap must be on the LAN), and
-it listens on port 4000 so the web container can reach it. Allow the UI port from the LAN and
-block 4000:
+**Network exposure.** The API container uses host networking (nmap must be on the LAN) but
+listens only on `172.31.250.1`, the gateway of a small Docker network that only the web container
+joins, so port 4000 is not reachable from the LAN. As defence in depth, allow only the UI port:
 
 ```bash
 sudo ufw allow from 192.168.100.0/24 to any port 8080 proto tcp
-sudo ufw deny 4000/tcp
 ```
 
 PostgreSQL listens on `127.0.0.1` only.

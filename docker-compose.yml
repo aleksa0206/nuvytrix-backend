@@ -34,10 +34,10 @@ services:
       NODE_ENV: production
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
-      # Bound to all interfaces so the frontend container can reach it through the Docker
-      # gateway; block port 4000 from the LAN with the host firewall (see README).
-      HOST: 0.0.0.0
-      TRUST_PROXY: loopback, 172.16.0.0/12
+      # Bound only to the gateway of the "proxy" network below: reachable by the web container,
+      # not from the LAN. Only that network's addresses may set X-Forwarded-For.
+      HOST: 172.31.250.1
+      TRUST_PROXY: 172.31.250.0/29
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,11 +48,20 @@ services:
     ports:
       - '${WEB_PORT:-8080}:80'
     environment:
-      API_UPSTREAM: host.docker.internal:4000
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
+      API_UPSTREAM: 172.31.250.1:4000
+    networks:
+      - proxy
     depends_on:
       - api
+
+networks:
+  # Dedicated bridge whose gateway (172.31.250.1) is the API's listen address. Change both
+  # addresses together if this subnet collides with another network on the server.
+  proxy:
+    ipam:
+      config:
+        - subnet: 172.31.250.0/29
+          gateway: 172.31.250.1
 
 volumes:
   pgdata:
