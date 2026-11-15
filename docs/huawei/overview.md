@@ -66,3 +66,4 @@ See [router-capabilities.md](router-capabilities.md) for the full capability mat
 | [implementation-plan.md](implementation-plan.md) | Backend design and what is implemented |
 | [firewall-management.md](firewall-management.md) | IPv4 filter read/write API analysis |
 | [feature-parity.md](feature-parity.md) | Every router feature vs. Nuvytrix |
+| [security-review.md](security-review.md) | Telnet exposure and the AnyDesk UPnP mapping |
