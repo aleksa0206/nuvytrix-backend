@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import app from '../src/app';
 import { db } from '../src/config/db';
 import { container } from '../src/container';
-import { MAX_FAILED_ATTEMPTS } from '../src/modules/auth/auth.service';
+import { MAX_ACCOUNT_FAILURES, MAX_FAILED_ATTEMPTS } from '../src/modules/auth/auth.service';
 import { closeDatabase, prepareDatabase, signedInAgent, TEST_ADMIN } from './helpers/testDb';
 
 afterAll(closeDatabase);
@@ -75,6 +75,23 @@ describe('authentication', () => {
       ipAddress: '192.168.100.20',
     });
     expect(fromAdminPc.admin.username).toBe('admin');
+  });
+
+  it('applies the account-wide limit only to addresses the admin has not signed in from', async () => {
+    await container.authService.createOrResetAdmin(TEST_ADMIN.username, TEST_ADMIN.password);
+    const adminPc = { ipAddress: '192.168.100.20' };
+    await container.authService.login('admin', TEST_ADMIN.password, adminPc);
+
+    for (let attempt = 0; attempt < MAX_ACCOUNT_FAILURES; attempt++) {
+      const attacker = { ipAddress: `192.168.100.${100 + (attempt % 100)}` };
+      await container.authService.login('admin', 'wrong', attacker).catch(() => undefined);
+    }
+
+    await expect(
+      container.authService.login('admin', TEST_ADMIN.password, { ipAddress: '192.168.100.250' })
+    ).rejects.toMatchObject({ statusCode: 423 });
+    const fromKnownPc = await container.authService.login('admin', TEST_ADMIN.password, adminPc);
+    expect(fromKnownPc.admin.username).toBe('admin');
   });
 
   it('protects endpoints and invalidates the session on the server at logout', async () => {

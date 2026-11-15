@@ -17,13 +17,18 @@ export class LoginThrottle {
     private maxEntries = 10_000
   ) {}
 
+  /** Fails closed: when the table is full of active locks, keys it cannot track count as locked. */
   isLocked(key: string, now = Date.now()): boolean {
-    return (this.attempts.get(key)?.lockedUntil ?? 0) > now;
+    const state = this.attempts.get(key);
+    if (state) return state.lockedUntil > now;
+    this.prune(now);
+    return this.attempts.size >= this.maxEntries;
   }
 
   recordFailure(key: string, limit: number, now = Date.now()): void {
     this.prune(now);
     const current = this.attempts.get(key);
+    if (!current && this.attempts.size >= this.maxEntries) return;
     const state =
       current && now - current.windowStart < this.windowMs
         ? current
@@ -39,15 +44,16 @@ export class LoginThrottle {
     this.attempts.delete(key);
   }
 
+  /** Drops expired entries, then the oldest unlocked ones; active locks are never evicted. */
   private prune(now: number): void {
     for (const [key, state] of this.attempts) {
       const windowOver = now - state.windowStart >= this.windowMs;
       if (windowOver && state.lockedUntil <= now) this.attempts.delete(key);
     }
-    while (this.attempts.size >= this.maxEntries) {
-      const oldest = this.attempts.keys().next().value;
-      if (oldest === undefined) break;
-      this.attempts.delete(oldest);
+    if (this.attempts.size < this.maxEntries) return;
+    for (const [key, state] of this.attempts) {
+      if (this.attempts.size < this.maxEntries) break;
+      if (state.lockedUntil <= now) this.attempts.delete(key);
     }
   }
 }

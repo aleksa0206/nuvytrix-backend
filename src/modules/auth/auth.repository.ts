@@ -19,6 +19,19 @@ export class AuthRepository {
     await this.db('admins').where({ id: adminId }).update({ last_login_at: this.db.fn.now() });
   }
 
+  async hasRecentLoginFrom(
+    adminId: number,
+    ipAddress: string | undefined,
+    days: number
+  ): Promise<boolean> {
+    if (!ipAddress) return false;
+    const row = await this.db('audit_logs')
+      .where({ admin_id: adminId, action: 'auth.login', ip_address: ipAddress })
+      .andWhere('created_at', '>=', this.db.raw('now() - make_interval(days => ?)', [days]))
+      .first('id');
+    return row !== undefined;
+  }
+
   async createSession(session: {
     adminId: number;
     tokenHash: string;

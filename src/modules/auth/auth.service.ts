@@ -11,6 +11,7 @@ export const SESSION_COOKIE = 'nuvytrix_session';
 export const MAX_FAILED_ATTEMPTS = 5;
 export const MAX_ACCOUNT_FAILURES = 100;
 export const LOCK_MINUTES = 15;
+const KNOWN_CLIENT_DAYS = 30;
 // The minimum cost keeps the test suite fast; it is never used outside NODE_ENV=test.
 const BCRYPT_COST = process.env.NODE_ENV === 'test' ? 4 : 12;
 // Writing last_seen_at on every request would turn each read into a write; a minute of
@@ -54,7 +55,20 @@ export class AuthService {
     // Runs before the lock check so a locked attempt costs the same time as any other.
     const passwordMatches = await bcrypt.compare(password, admin?.password_hash ?? DUMMY_HASH);
 
-    if (this.throttle.isLocked(clientKey) || this.throttle.isLocked(accountKey)) {
+    // The account-wide limit is skipped for addresses this admin recently signed in from, so a
+    // flood of failures from elsewhere on the LAN cannot lock the administrator's own device out.
+    const accountLocked =
+      this.throttle.isLocked(accountKey) &&
+      !(
+        admin &&
+        (await this.authRepository.hasRecentLoginFrom(
+          admin.id,
+          context.ipAddress,
+          KNOWN_CLIENT_DAYS
+        ))
+      );
+
+    if (this.throttle.isLocked(clientKey) || accountLocked) {
       await this.auditService.record({
         adminId: admin?.id ?? null,
         action: 'auth.login_failed',
