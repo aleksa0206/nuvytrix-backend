@@ -17,10 +17,15 @@ export class LoginThrottle {
     private maxEntries = 10_000
   ) {}
 
-  /** Fails closed: when the table is full of active locks, keys it cannot track count as locked. */
   isLocked(key: string, now = Date.now()): boolean {
-    const state = this.attempts.get(key);
-    if (state) return state.lockedUntil > now;
+    return (this.attempts.get(key)?.lockedUntil ?? 0) > now;
+  }
+
+  /**
+   * True when the table is full of active locks and new keys cannot be tracked. Callers treat
+   * this as locked for unknown clients (fail closed) while still admitting trusted ones.
+   */
+  isSaturated(now = Date.now()): boolean {
     this.prune(now);
     return this.attempts.size >= this.maxEntries;
   }

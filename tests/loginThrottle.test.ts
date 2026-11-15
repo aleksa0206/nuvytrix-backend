@@ -31,13 +31,13 @@ describe('LoginThrottle', () => {
     expect((throttle as unknown as { attempts: Map<string, unknown> }).attempts.size).toBe(1);
   });
 
-  it('never evicts active locks and fails closed when they fill the table', () => {
+  it('never evicts active locks and reports saturation when they fill the table', () => {
     const throttle = new LoginThrottle(WINDOW, 3);
     for (const key of ['a', 'b', 'c']) throttle.recordFailure(key, 1, 0);
     throttle.recordFailure('d', 1, 1);
 
     expect(['a', 'b', 'c'].every((key) => throttle.isLocked(key, 2))).toBe(true);
-    expect(throttle.isLocked('d', 2)).toBe(true);
-    expect(throttle.isLocked('d', WINDOW + 1)).toBe(false);
+    expect(throttle.isSaturated(2)).toBe(true);
+    expect(throttle.isSaturated(WINDOW + 1)).toBe(false);
   });
 });

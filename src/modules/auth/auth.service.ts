@@ -55,20 +55,17 @@ export class AuthService {
     // Runs before the lock check so a locked attempt costs the same time as any other.
     const passwordMatches = await bcrypt.compare(password, admin?.password_hash ?? DUMMY_HASH);
 
-    // The account-wide limit is skipped for addresses this admin recently signed in from, so a
-    // flood of failures from elsewhere on the LAN cannot lock the administrator's own device out.
-    const accountLocked =
-      this.throttle.isLocked(accountKey) &&
-      !(
-        admin &&
-        (await this.authRepository.hasRecentLoginFrom(
-          admin.id,
-          context.ipAddress,
-          KNOWN_CLIENT_DAYS
-        ))
-      );
+    // Queried for unknown usernames too (id 0 matches nothing), so timing does not reveal them.
+    const knownClient = await this.authRepository.hasRecentLoginFrom(
+      admin?.id ?? 0,
+      context.ipAddress,
+      KNOWN_CLIENT_DAYS
+    );
+    // The account-wide limit and a saturated throttle table never block an address this admin
+    // recently signed in from, so failures elsewhere on the LAN cannot lock the admin's device out.
+    const sharedLimitHit = this.throttle.isLocked(accountKey) || this.throttle.isSaturated();
 
-    if (this.throttle.isLocked(clientKey) || accountLocked) {
+    if (this.throttle.isLocked(clientKey) || (sharedLimitHit && !knownClient)) {
       await this.auditService.record({
         adminId: admin?.id ?? null,
         action: 'auth.login_failed',
