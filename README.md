@@ -4,7 +4,7 @@ REST API for Nuvytrix, the dashboard I use to keep an eye on my home network. It
 
 Frontend: [nuvytrix-frontend](https://github.com/aleksa0206/nuvytrix-frontend) (Angular).
 
-It runs on my Ubuntu server at home and is published at nuvytrix.stackvale.space behind Cloudflare Access, so only I can reach it.
+It runs on my Ubuntu server at home and is only reachable from my LAN and over Tailscale. Unlike my other projects it has no public domain, on purpose: it can scan the network and reads the router's firewall log.
 
 ## Tech stack
 
@@ -123,7 +123,7 @@ cd nuvytrix-backend
 cp .env.example .env && chmod 600 .env
 ```
 
-In `.env` set at least a long random `DB_PASSWORD`, `ALLOWED_SCAN_CIDRS`, `ROUTER_HOST`, `FRONTEND_URL=https://nuvytrix.stackvale.space` and `COOKIE_SECURE=true`. Then:
+In `.env` set at least a long random `DB_PASSWORD`, `ALLOWED_SCAN_CIDRS`, `ROUTER_HOST` and `FRONTEND_URL=http://<server-ip>:8080`. Then:
 
 ```bash
 docker compose up -d --build
@@ -133,13 +133,16 @@ docker compose logs -f api
 docker compose down          # stops everything, data stays in the volume
 ```
 
-It's published like my other projects: the web container listens on `127.0.0.1:8080` and Cloudflare Tunnel routes `nuvytrix.stackvale.space` to it. Since this app scans the network and shows the firewall log, the hostname is also behind a Cloudflare Access policy that only lets my email in, so the login form is never the only thing in front of the dashboard.
+The UI is on `http://<server-ip>:8080` from the LAN, or `http://<tailscale-ip>:8080` from anywhere on my tailnet. Don't forward the port on the router or put it behind a public tunnel.
 
-nginx takes the visitor's address from `CF-Connecting-IP`, but only for requests coming from Docker networks, so rate limits and login throttling see real clients instead of the tunnel.
+The API container uses host networking so nmap is really on the LAN, but it only listens on `172.31.250.1`, the gateway of a small Docker network that only the web container joins. PostgreSQL listens on `127.0.0.1`. The firewall only lets the LAN and Tailscale reach the UI port:
 
-The API container uses host networking so nmap is really on the LAN, but it only listens on `172.31.250.1`, the gateway of a small Docker network that only the web container joins. PostgreSQL listens on `127.0.0.1`.
+```bash
+sudo ufw allow from 192.168.100.0/24 to any port 8080 proto tcp
+sudo ufw allow in on tailscale0 to any port 8080 proto tcp
+```
 
-For LAN-only access without the tunnel, set `WEB_BIND=0.0.0.0` and `COOKIE_SECURE=false` and open `http://<server-ip>:8080`.
+If the app ever sits behind a reverse proxy or tunnel, set `REAL_IP_FROM` on the web container to the proxy's address so nginx reads the visitor IP from `CF-Connecting-IP`, and set `COOKIE_SECURE=true` once it's served over HTTPS.
 
 ### Updating
 
