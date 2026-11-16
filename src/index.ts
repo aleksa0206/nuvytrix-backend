@@ -20,6 +20,8 @@ function startBackgroundJobs() {
       .catch((err) => logger.error({ err }, 'Monitoring round failed'));
   }, env.MONITORING_INTERVAL_SECONDS * 1000).unref();
 
+  setInterval(() => void container.deviceIntelService.deleteExpired(), HOURLY_MS).unref();
+
   setInterval(() => {
     container.alertsService
       .deleteExpired()

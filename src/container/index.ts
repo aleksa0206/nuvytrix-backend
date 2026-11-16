@@ -6,6 +6,7 @@ import { AuthRepository } from '../modules/auth/auth.repository';
 import { AuthService } from '../modules/auth/auth.service';
 import { DevicesRepository } from '../modules/devices/devices.repository';
 import { DevicesService } from '../modules/devices/devices.service';
+import { DeviceIntelService } from '../modules/devices/deviceIntel.service';
 import { NmapRunner, type HostDiscoverer } from '../modules/devices/nmapRunner';
 import { FirewallRepository } from '../modules/firewall/firewall.repository';
 import { FirewallService } from '../modules/firewall/firewall.service';
@@ -60,6 +61,7 @@ class Container {
 
   public devicesRepository: DevicesRepository;
   public devicesService: DevicesService;
+  public deviceIntelService: DeviceIntelService;
 
   public firewallRepository: FirewallRepository;
   public firewallService: FirewallService;
@@ -96,6 +98,7 @@ class Container {
     this.auditRepository = new AuditRepository(db);
     this.auditService = new AuditService(this.auditRepository);
     this.alertsService = new AlertsService(db);
+    this.deviceIntelService = new DeviceIntelService(db, this.alertsService);
 
     this.authRepository = new AuthRepository(db);
     this.authService = new AuthService(this.authRepository, this.auditService, {
@@ -117,7 +120,7 @@ class Container {
         allowedCidrs: env.ALLOWED_SCAN_CIDRS,
         onlineWindowMinutes: env.DEVICE_ONLINE_WINDOW_MINUTES,
       },
-      this.alertsService
+      this.deviceIntelService
     );
 
     this.firewallRepository = new FirewallRepository(db);
@@ -174,7 +177,8 @@ class Container {
         pollSeconds: env.ROUTER_POLL_SECONDS,
         retentionDays: env.MONITORING_RETENTION_DAYS,
       },
-      this.alertsService
+      this.alertsService,
+      this.deviceIntelService
     );
     const routerWriter = new RouterWriter(routerWebClient, this.auditService, {
       writesEnabled: overrides.routerWritesEnabled ?? env.ROUTER_WRITES_ENABLED,

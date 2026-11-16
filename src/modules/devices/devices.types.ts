@@ -25,6 +25,12 @@ export interface DeviceRow {
   custom_name: string | null;
   device_type: DeviceType | null;
   notes: string | null;
+  tags: string[];
+  trusted: boolean | null;
+  address_source: string | null;
+  lease_expires_at: Date | null;
+  reserved_ip: string | null;
+  connection: string | null;
   first_seen_at: Date;
   last_seen_at: Date;
   last_scan_id: number | null;
@@ -57,6 +63,8 @@ export interface DeviceListQuery {
   pageSize: number;
   search?: string;
   status?: DeviceStatusFilter;
+  trust?: 'trusted' | 'untrusted' | 'unreviewed';
+  tag?: string;
   sort: 'last_seen_at' | 'first_seen_at' | 'ip_address' | 'name';
   order: 'asc' | 'desc';
 }

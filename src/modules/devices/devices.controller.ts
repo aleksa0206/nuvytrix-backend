@@ -40,6 +40,9 @@ async function getScanHandler(_req: Request, res: Response) {
 
 export const listDevices = asyncHandler(listDevicesHandler);
 export const getDevice = asyncHandler(getDeviceHandler);
+export const getPresence = asyncHandler(async (_req: Request, res: Response) => {
+  res.json(await container.devicesService.getPresence(res.locals.params.id, res.locals.query.days));
+});
 export const updateDevice = asyncHandler(updateDeviceHandler);
 export const startScan = asyncHandler(startScanHandler);
 export const listScans = asyncHandler(listScansHandler);

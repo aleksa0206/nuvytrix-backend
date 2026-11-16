@@ -2,7 +2,14 @@ import type { Knex } from 'knex';
 import { logger } from '../../config/logger';
 
 export type AlertKind =
-  'target_down' | 'target_up' | 'new_device' | 'optical_weak' | 'optical_ok' | 'optical_loss';
+  | 'target_down'
+  | 'target_up'
+  | 'new_device'
+  | 'mac_changed'
+  | 'ip_conflict'
+  | 'optical_weak'
+  | 'optical_ok'
+  | 'optical_loss';
 export type AlertSeverity = 'info' | 'warning' | 'error';
 
 interface AlertRow {

@@ -64,10 +64,24 @@ export class DevicesRepository {
     return { rows, total: countRow?.count ?? 0 };
   }
 
-  /** Records every host from one scan atomically; returns the hosts seen for the first time. */
-  async recordScanResults(scanId: number, hosts: DiscoveredHost[]): Promise<DiscoveredHost[]> {
+  /**
+   * Records every host from one scan atomically, with an event for each IP or hostname change;
+   * returns the hosts seen for the first time.
+   */
+  async recordScanResults(
+    scanId: number,
+    hosts: DiscoveredHost[]
+  ): Promise<(DiscoveredHost & { id: number })[]> {
     return this.db.transaction(async (trx) => {
-      const newDevices: DiscoveredHost[] = [];
+      const newDevices: (DiscoveredHost & { id: number })[] = [];
+      const event = (deviceId: number, kind: string, from: string, to: string) =>
+        trx('device_events').insert({
+          device_id: deviceId,
+          kind,
+          old_value: from,
+          new_value: to,
+          details: JSON.stringify({ source: 'scan', scanId }),
+        });
       for (const host of hosts) {
         const existing = await (host.macAddress
           ? trx<DeviceRow>('devices').where({ mac_address: host.macAddress }).first()
@@ -79,6 +93,12 @@ export class DevicesRepository {
         let deviceId: number;
         if (existing) {
           deviceId = existing.id;
+          if (existing.mac_address && host.ipAddress !== existing.ip_address) {
+            await event(deviceId, 'ip_changed', existing.ip_address, host.ipAddress);
+          }
+          if (host.hostname && existing.hostname && host.hostname !== existing.hostname) {
+            await event(deviceId, 'hostname_changed', existing.hostname, host.hostname);
+          }
           await trx('devices')
             .where({ id: existing.id })
             .update({
@@ -90,7 +110,7 @@ export class DevicesRepository {
               updated_at: trx.fn.now(),
             });
         } else {
-          newDevices.push(host);
+          newDevices.push({ ...host, id: 0 });
           const [created] = await trx('devices')
             .insert({
               mac_address: host.macAddress,
@@ -103,6 +123,7 @@ export class DevicesRepository {
             })
             .returning('id');
           deviceId = created.id;
+          newDevices[newDevices.length - 1]!.id = deviceId;
         }
 
         await trx('device_observations').insert({
@@ -139,6 +160,10 @@ export class DevicesRepository {
       } else if (query.status === 'new') {
         builder.whereRaw('first_seen_at >= now() - make_interval(hours => ?)', [NEW_DEVICE_HOURS]);
       }
+      if (query.trust === 'trusted') builder.where('trusted', true);
+      else if (query.trust === 'untrusted') builder.where('trusted', false);
+      else if (query.trust === 'unreviewed') builder.whereNull('trusted');
+      if (query.tag) builder.whereRaw('? = ANY(tags)', [query.tag]);
     });
 
     const [rows, countRow] = await Promise.all([
@@ -179,7 +204,7 @@ export class DevicesRepository {
 
   async updateDevice(
     deviceId: number,
-    changes: Partial<Pick<DeviceRow, 'custom_name' | 'device_type' | 'notes'>>
+    changes: Partial<Pick<DeviceRow, 'custom_name' | 'device_type' | 'notes' | 'tags' | 'trusted'>>
   ): Promise<DeviceRow | undefined> {
     const [updated] = await this.db('devices')
       .where({ id: deviceId })

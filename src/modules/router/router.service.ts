@@ -1,3 +1,4 @@
+import type { DeviceIntelService } from '../devices/deviceIntel.service';
 import type { AlertsService } from '../alerts/alerts.service';
 import { AppError } from '../../common/errors/AppError';
 import { ErrorCode } from '../../common/errors/errorCodes';
@@ -5,6 +6,7 @@ import { logger } from '../../config/logger';
 import type { DevicesRepository } from '../devices/devices.repository';
 import type { FirewallService } from '../firewall/firewall.service';
 import {
+  parseDhcpReservations,
   parseFirewallLogText,
   parseIpFilter,
   parseLanPorts,
@@ -53,6 +55,7 @@ const POLL_PAGES = [
   'wifiClients',
   'devices',
   'ipFilter',
+  'dhcpStatic',
 ] as const;
 
 type OpticalState = 'unknown' | 'ok' | 'weak' | 'loss';
@@ -75,7 +78,8 @@ export class RouterService {
     private devicesRepository: DevicesRepository,
     private firewallService: FirewallService,
     private settings: RouterSettings,
-    private alerts?: AlertsService
+    private alerts?: AlertsService,
+    private intel?: DeviceIntelService
   ) {}
 
   get isConfigured(): boolean {
@@ -162,6 +166,11 @@ export class RouterService {
         .catch((err) => logger.error({ err }, 'Could not store router sample'));
     }
     if (snapshot.optical) await this.checkOptical(snapshot.optical);
+    if (pages && this.intel && snapshot.devices.length > 0) {
+      await this.intel
+        .syncFromRouter(snapshot.devices, parseDhcpReservations(pages.dhcpStatic))
+        .catch((err) => logger.error({ err }, 'Could not update devices from the router'));
+    }
     if (errors.length > 0) logger.warn({ errors }, 'Router poll incomplete');
     return snapshot;
   }

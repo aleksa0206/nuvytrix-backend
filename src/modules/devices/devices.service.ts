@@ -1,4 +1,4 @@
-import type { AlertsService } from '../alerts/alerts.service';
+import type { DeviceIntelService } from './deviceIntel.service';
 import { AppError, ConflictError, NotFoundError } from '../../common/errors/AppError';
 import { ErrorCode } from '../../common/errors/errorCodes';
 import { isTargetAllowed, parseCidr } from '../../common/utils/ipv4';
@@ -20,6 +20,8 @@ export interface DeviceChanges {
   customName?: string | null;
   deviceType?: DeviceType | null;
   notes?: string | null;
+  tags?: string[];
+  trusted?: boolean | null;
 }
 
 const OBSERVATION_HISTORY_LIMIT = 50;
@@ -33,7 +35,7 @@ export class DevicesService {
     private discoverer: HostDiscoverer,
     private auditService: AuditService,
     private settings: DiscoverySettings,
-    private alerts?: AlertsService
+    private intel?: DeviceIntelService
   ) {}
 
   /** Normalizes a target to network/prefix form and rejects anything outside the allowed networks. */
@@ -91,14 +93,7 @@ export class DevicesService {
       const created = await this.devicesRepository.recordScanResults(scan.id, hosts);
       const newDevices = created.length;
       await this.devicesRepository.completeScan(scan.id, hosts.length, newDevices);
-      for (const host of created) {
-        await this.alerts?.raise(
-          'new_device',
-          'warning',
-          `New device on the network: ${host.hostname ?? host.vendor ?? host.ipAddress}`,
-          { ...host }
-        );
-      }
+      for (const host of created) await this.intel?.announceNew(host);
       logger.info(
         {
           scanId: scan.id,
@@ -156,8 +151,15 @@ export class DevicesService {
       deviceId,
       OBSERVATION_HISTORY_LIMIT
     );
+    const events = (await this.intel?.findEvents(deviceId)) ?? [];
     return {
       ...this.toDeviceDto(device),
+      events: events.map((e) => ({
+        kind: e.kind,
+        oldValue: e.old_value,
+        newValue: e.new_value,
+        at: e.created_at,
+      })),
       observations: observations.map((observation) => ({
         scanId: observation.scan_id,
         ipAddress: observation.ip_address,
@@ -177,6 +179,8 @@ export class DevicesService {
       ...(changes.customName !== undefined && { custom_name: changes.customName || null }),
       ...(changes.deviceType !== undefined && { device_type: changes.deviceType }),
       ...(changes.notes !== undefined && { notes: changes.notes || null }),
+      ...(changes.tags !== undefined && { tags: changes.tags }),
+      ...(changes.trusted !== undefined && { trusted: changes.trusted }),
     });
     if (!updated) throw new NotFoundError(ErrorCode.DEVICE_NOT_FOUND);
     await this.auditService.record({
@@ -188,6 +192,12 @@ export class DevicesService {
       ipAddress: context.ipAddress,
     });
     return this.toDeviceDto(updated);
+  }
+
+  async getPresence(deviceId: number, days: number) {
+    const device = await this.devicesRepository.findDevice(deviceId);
+    if (!device) throw new NotFoundError(ErrorCode.DEVICE_NOT_FOUND);
+    return { days, points: (await this.intel?.presence(deviceId, days)) ?? [] };
   }
 
   async getSummary() {
@@ -210,6 +220,12 @@ export class DevicesService {
       customName: row.custom_name,
       deviceType: row.device_type,
       notes: row.notes,
+      tags: row.tags ?? [],
+      trusted: row.trusted ?? null,
+      addressSource: row.address_source ?? null,
+      leaseExpiresAt: row.lease_expires_at ?? null,
+      reservedIp: row.reserved_ip ?? null,
+      connection: row.connection ?? null,
       status: online ? ('online' as const) : ('offline' as const),
       isNew: row.first_seen_at.getTime() >= now - NEW_DEVICE_HOURS * 3_600_000,
       firstSeenAt: row.first_seen_at,

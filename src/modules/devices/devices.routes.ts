@@ -3,6 +3,7 @@ import { requireAuth } from '../../common/middleware/auth';
 import { validateBody, validateParams, validateQuery } from '../../common/middleware/validate';
 import {
   getDevice,
+  getPresence,
   getScan,
   listDevices,
   listScans,
@@ -12,6 +13,7 @@ import {
 import {
   deviceListQuerySchema,
   idParamSchema,
+  presenceQuerySchema,
   scanListQuerySchema,
   startScanSchema,
   updateDeviceSchema,
@@ -70,6 +72,26 @@ router.get('/devices', validateQuery(deviceListQuerySchema), listDevices);
  *       200: { description: Updated device }
  */
 router.get('/devices/:id', validateParams(idParamSchema), getDevice);
+
+/**
+ * @swagger
+ * /devices/{id}/presence:
+ *   get:
+ *     summary: Share of router reads that saw the device online, per hour (router read every few minutes)
+ *     tags: [Devices]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
+ *       - { in: query, name: days, schema: { type: integer, minimum: 1, maximum: 30 } }
+ *     responses:
+ *       200: { description: "{ days, points: [{ at, onlineShare, samples }] }" }
+ */
+router.get(
+  '/devices/:id/presence',
+  validateParams(idParamSchema),
+  validateQuery(presenceQuerySchema),
+  getPresence
+);
 router.patch(
   '/devices/:id',
   validateParams(idParamSchema),
