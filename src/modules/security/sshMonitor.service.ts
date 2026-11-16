@@ -22,46 +22,53 @@ export interface SshMonitorSettings {
 /** Failed attempts from one address within the window that raise an alert. */
 const FAILED_THRESHOLD = 5;
 const FAILED_WINDOW_MINUTES = 10;
+const BASELINE_KEY = 'ssh_baseline_done';
 
-const LINE =
-  /^(\S+)\s+\S+\s+sshd\[(\d+)\]:\s+(?:(Accepted) (\S+) for (\S+) from (\S+) port \d+|(Failed) (\S+) for (?:invalid user )?(\S+) from (\S+) port \d+|(Invalid) user (\S*) from (\S+) port \d+)/;
+// Each pattern ends where sshd ends the line, and the greedy user part makes the LAST
+// "from <ip> port <n>" win: a username containing "from 1.2.3.4 port 1" cannot fake the source.
+const PREFIX = /^(\S+)\s+\S+\s+sshd\[(\d+)\]:\s+(.*)$/;
+const ACCEPTED = /^Accepted (\S+) for (\S+) from (\S+) port \d+ ssh2(?:: .*)?$/;
+const FAILED = /^Failed (\S+) for (?:invalid user )?(.*) from (\S+) port \d+ ssh2$/;
+const INVALID = /^Invalid user (.*) from (\S+) port \d+$/;
 
 /** sshd lines of a syslog file with ISO timestamps (Ubuntu's rsyslog default). */
 export function parseAuthLog(text: string): SshEvent[] {
   const events: SshEvent[] = [];
   for (const line of text.split('\n')) {
     if (!line.includes('sshd[')) continue;
-    const m = LINE.exec(line);
-    if (!m) continue;
-    const loggedAt = new Date(m[1]!);
+    const head = PREFIX.exec(line);
+    if (!head) continue;
+    const loggedAt = new Date(head[1]!);
     if (Number.isNaN(loggedAt.getTime())) continue;
-    const ip = (value: string | undefined) => (value && isIP(value) ? value : null);
-    if (m[3]) {
+    const pid = Number(head[2]);
+    const message = head[3]!;
+    let m: RegExpExecArray | null;
+    if ((m = ACCEPTED.exec(message)) && isIP(m[3]!)) {
       events.push({
         loggedAt,
-        pid: Number(m[2]),
+        pid,
         kind: 'accepted',
-        method: m[4]!,
-        username: m[5]!,
-        sourceIp: ip(m[6]),
+        method: m[1]!,
+        username: m[2]!,
+        sourceIp: m[3]!,
       });
-    } else if (m[7]) {
+    } else if ((m = FAILED.exec(message)) && isIP(m[3]!)) {
       events.push({
         loggedAt,
-        pid: Number(m[2]),
+        pid,
         kind: 'failed',
-        method: m[8]!,
-        username: m[9]!,
-        sourceIp: ip(m[10]),
+        method: m[1]!,
+        username: m[2]!,
+        sourceIp: m[3]!,
       });
-    } else if (m[11]) {
+    } else if ((m = INVALID.exec(message)) && isIP(m[2]!)) {
       events.push({
         loggedAt,
-        pid: Number(m[2]),
+        pid,
         kind: 'invalid_user',
         method: null,
-        username: m[12] || null,
-        sourceIp: ip(m[13]),
+        username: m[1] || null,
+        sourceIp: m[2]!,
       });
     }
   }
@@ -107,7 +114,9 @@ export class SshMonitorService {
   async collect(): Promise<number> {
     if (!this.enabled) return 0;
     try {
-      const firstRun = (await this.db('ssh_events').first('id')) === undefined;
+      // A persistent marker, not "the table is empty": retention can never turn alerts off again.
+      const firstRun =
+        (await this.db('app_settings').where({ key: BASELINE_KEY }).first()) === undefined;
       const files = firstRun
         ? [`${this.settings.logPath}.1`, this.settings.logPath]
         : [this.settings.logPath];
@@ -151,7 +160,14 @@ export class SshMonitorService {
           );
         }
       }
-      if (!firstRun) await this.checkFailures();
+      if (firstRun) {
+        await this.db('app_settings')
+          .insert({ key: BASELINE_KEY, value: 'true' })
+          .onConflict('key')
+          .ignore();
+      } else {
+        await this.checkFailures();
+      }
       this.lastRun = new Date();
       this.lastError = null;
       return added;
@@ -232,9 +248,14 @@ export class SshMonitorService {
     };
   }
 
+  /** Old events go, except the latest successful login per address (the "known sources"). */
   deleteExpired(): Promise<number> {
     return this.db('ssh_events')
       .whereRaw('logged_at < now() - make_interval(days => ?)', [this.settings.retentionDays])
+      .whereNotIn(
+        'id',
+        this.db('ssh_events').where('kind', 'accepted').groupBy('source_ip').max('id')
+      )
       .delete();
   }
 }

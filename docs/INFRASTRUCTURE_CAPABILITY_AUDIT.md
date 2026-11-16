@@ -131,6 +131,10 @@ With 4.4 GiB available the server has room; the six MySQL instances remain the l
 4. **Docker proxy** — must allow GET only; a misconfiguration would grant root-equivalent access.
 5. **Compose changes** — new mounts (`/proc`, `/sys`, `auth.log`) are read-only; the API keeps host
    networking.
+7. **SSH log access is broader than needed** — the API container mounts `/var/log` read-only with the
+   `adm` group, so it could read other adm-readable logs (syslog, kern.log), not only auth.log.
+   Narrowing it needs root on the server: an rsyslog rule writing `sshd` messages to a dedicated
+   file and group, rotated in place, and mounting only that file. Not done (no sudo for Nuvytrix).
 6. **Backup gap** — homewise and portfolio databases are not backed up (outside Nuvytrix; reported).
 
 ## 5. Plan

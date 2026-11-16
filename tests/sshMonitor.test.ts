@@ -2,6 +2,7 @@ import { appendFileSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { db } from '../src/config/db';
 import { container, resetContainer } from '../src/container';
 import { parseAuthLog, sourceKind } from '../src/modules/security/sshMonitor.service';
 import { closeDatabase, prepareDatabase, signedInAgent } from './helpers/testDb';
@@ -67,6 +68,23 @@ describe('ssh monitoring', () => {
     const { body } = await agent.get('/api/security/ssh?hours=24');
     expect(body).toMatchObject({ accepted: 3, failed: 6, error: null });
     expect(body.sources[0]).toMatchObject({ ip: '203.0.113.9', kind: 'internet', failed: 6 });
+  });
+
+  it('takes the last "from <ip>" so a crafted username cannot fake the source', () => {
+    const crafted =
+      `${ts(1)} aleksa sshd[9]: Invalid user x from 10.0.0.1 port 1 from 203.0.113.50 port 4242\n` +
+      `${ts(1)} aleksa sshd[10]: Failed password for invalid user y from 192.168.100.2 port 22 from 198.51.100.7 port 555 ssh2\n`;
+    expect(parseAuthLog(crafted).map((e) => e.sourceIp)).toEqual(['203.0.113.50', '198.51.100.7']);
+  });
+
+  it('keeps alerting after retention emptied the table', async () => {
+    const ssh = container.sshMonitorService;
+    await ssh.collect(); // baseline
+    await db('ssh_events').delete();
+    writeFileSync(log, accepted(1, 300, '192.168.100.9'));
+    await ssh.collect();
+    const titles = (await container.alertsService.list()).alerts.map((a) => a.title);
+    expect(titles).toEqual(['SSH login from a new address: aleksa from 192.168.100.9 (lan)']);
   });
 
   it('reports an unreadable log as an error instead of failing', async () => {

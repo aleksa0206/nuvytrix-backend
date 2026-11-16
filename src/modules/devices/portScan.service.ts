@@ -369,13 +369,11 @@ export class PortScanService {
 
   /** Scans left 'running' by a restart of the API never finish; mark them failed. */
   failInterrupted(): Promise<number> {
-    return this.db('port_scans')
-      .where({ status: 'running' })
-      .update({
-        status: 'failed',
-        error: 'Interrupted by a restart',
-        finished_at: this.db.fn.now(),
-      });
+    return this.db('port_scans').where({ status: 'running' }).update({
+      status: 'failed',
+      error: 'Interrupted by a restart',
+      finished_at: this.db.fn.now(),
+    });
   }
 
   latestScans(limit = 10) {
