@@ -50,7 +50,8 @@ export type AuditAction =
   | 'router.dns_host_deleted'
   | 'router.ddns_created'
   | 'router.ddns_updated'
-  | 'router.ddns_deleted';
+  | 'router.ddns_deleted'
+  | 'router.upnp_changed';
 
 export interface AuditEntry {
   adminId: number | null;

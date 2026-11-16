@@ -29,6 +29,7 @@ import { RouterWifiService } from '../modules/router/routerWifi.service';
 import { RouterParentalService } from '../modules/router/routerParental.service';
 import { RouterDnsService } from '../modules/router/routerDns.service';
 import { RouterDdnsService } from '../modules/router/routerDdns.service';
+import { RouterUpnpService } from '../modules/router/routerUpnp.service';
 import { RouterWriter } from '../modules/router/routerWriter';
 import { HUAWEI_UPNP_DEFAULTS, UpnpClient } from '../modules/router/upnpClient';
 
@@ -74,6 +75,7 @@ class Container {
   public routerParentalService: RouterParentalService;
   public routerDnsService: RouterDnsService;
   public routerDdnsService: RouterDdnsService;
+  public routerUpnpService: RouterUpnpService;
 
   constructor(overrides: ContainerOverrides = {}) {
     this.auditRepository = new AuditRepository(db);
@@ -171,6 +173,7 @@ class Container {
     this.routerWifiService = new RouterWifiService(routerWriter);
     this.routerDnsService = new RouterDnsService(routerWriter);
     this.routerDdnsService = new RouterDdnsService(routerWriter);
+    this.routerUpnpService = new RouterUpnpService(routerWriter);
     this.routerParentalService = new RouterParentalService(routerWriter, {
       protectedAddresses: env.ROUTER_PROTECTED_ADDRESSES,
     });

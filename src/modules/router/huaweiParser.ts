@@ -782,3 +782,10 @@ export function parseDdns(page: string): DdnsEntry[] | null {
       lastError: d[9] ?? '',
     }));
 }
+
+/** upnp.asp: `var enblMainUpnp` ('1' = on). Null when the page is not the UPnP page. */
+export function parseUpnpEnabled(page: string): { enabled: boolean } | null {
+  const main = parseStringVar(page, 'enblMainUpnp');
+  if (main === null || !page.includes('function stUpnpPortMapping')) return null;
+  return { enabled: main === '1' };
+}

@@ -1199,4 +1199,43 @@ router.delete(
   })
 );
 
+/**
+ * @swagger
+ * /router/upnp-settings:
+ *   get:
+ *     summary: Whether UPnP is on, read from the router now
+ *     tags: [Router UPnP]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: UPnP state and whether Nuvytrix may change it }
+ *   patch:
+ *     summary: Turn UPnP on or off
+ *     description: >
+ *       Nuvytrix reads WAN status and live port mappings over UPnP; they are unavailable while it
+ *       is off. Read back after saving; audited.
+ *     tags: [Router UPnP]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: New state }
+ */
+router.get(
+  '/upnp-settings',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerUpnpService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getState()) });
+  })
+);
+router.patch(
+  '/upnp-settings',
+  validateBody(z.object({ enabled: z.boolean() })),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerUpnpService.setEnabled(
+      req.body.enabled,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+
 export default router;
