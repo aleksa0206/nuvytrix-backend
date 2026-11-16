@@ -41,7 +41,9 @@ The CGI path is relative to the page.
 1. Script `~/router-research/mactest.py` with the fake MAC `02:4e:56:00:00:01`, for each list: add,
    rename, filter on (blacklist), filter off, delete; every step read back. Both lists ended empty
    and off, as before.
-2. Through the deployed Nuvytrix: see the parity table for the date.
+2. Through the deployed Nuvytrix on 2026-11-16: LAN list add, rename, on, off, delete; adding the
+   server (`.27`) was refused with nothing sent; Wi-Fi list on the 5 GHz network (`SSID-5`) add, on,
+   off, delete. Both lists ended empty and off; every change has an `applied` audit row.
 
 ## Undo
 

@@ -40,8 +40,8 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | IPv4 filtering: on / off | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ 2026-11-16 | |
 | IPv4 filtering: whitelist / hybrid mode | ✅ | ✅ | ✅ | ❌ refused | ❌ | ❌ | not built: a whitelist without matching rules cuts every device off; hybrid rule fields not verified |
 | IPv6 filtering | ❌ | — | — | — | — | ✅ (absence verified) | not in this firmware |
-| MAC filtering: add / edit / delete, on / off (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → MAC filter | ✅ 2026-11-16 (script) | whitelist mode is shown, never edited; server and admin PC cannot be blocked |
-| Wi-Fi MAC filtering: per network, add / edit / delete, on / off (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → MAC filter | ✅ 2026-11-16 (script) | same limits as the MAC filter |
+| MAC filtering: add / edit / delete, on / off (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → MAC filter | ✅ 2026-11-16: script, then through Nuvytrix (add, rename, on, off, delete; server refused) | whitelist mode is shown, never edited; server and admin PC cannot be blocked |
+| Wi-Fi MAC filtering: per network, add / edit / delete, on / off (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → MAC filter | ✅ 2026-11-16: script, then through Nuvytrix on the 5 GHz network (add, on, off, delete) | same limits as the MAC filter |
 | Parental control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | several pages, templates and schedules |
 | Precise device access control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | Device access control (Telnet/HTTP from LAN/Wi-Fi) | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | risk of locking out the web UI |
