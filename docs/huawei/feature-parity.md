@@ -52,7 +52,8 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | UPnP on/off | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | USB / FTP, media sharing | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | no USB device in use |
 | DDNS | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | not needed behind CGNAT |
-| Static DNS hosts | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
+| Static DNS entries: add / edit / delete | ✅ | ✅ | ✅ | ✅ | ✅ Router → DHCP & DNS | ✅ 2026-11-16: script, then through Nuvytrix | IPv4 only; at most 20 |
+| DNS servers handed out by DHCP | ✅ | ✅ | ⚠️ | ❌ | ❌ | ⚠️ attempt timed out, not applied | see dns-management.md; needs the owner's go-ahead to retry |
 | Wi-Fi networks: name, on / off, name broadcast, WPA2 or WPA/WPA2 key; add / remove extra networks | ✅ | ✅ | ✅ | ✅ | ✅ Router → Wi-Fi | ✅ 2026-11-16: script, then through Nuvytrix with a temporary network | the page holds keys: compared, never returned or logged; open/WEP never set; main networks cannot be removed |
 | WLAN advanced, schedule, coverage | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | |
 | Account management | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | not planned: changing the router password from another app is a lockout risk |
@@ -71,10 +72,10 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
   helps, and shown in Nuvytrix. Tested against the real router.
 - **Configuration parity:** read access exists for every page. The write mechanism (page-relative
   `add.cgi` / `set.cgi` / `del.cgi` with the page token) is verified on 2026-11-16 for the IPv4
-  filter, DHCP reservations, the main DHCP pool, both MAC filters, IPv4 port mapping, DMZ, port triggers, Wi-Fi networks and parental control. Other forms use the same mechanism, but each
+  filter, DHCP reservations, the main DHCP pool, both MAC filters, IPv4 port mapping, DMZ, port triggers, Wi-Fi networks, parental control and static DNS. Other forms use the same mechanism, but each
   still needs its own verification.
 - Write support will be added feature by feature, each only after its request format has been
   verified on the router: IPv4 filter, DHCP, MAC filters, port mapping, DMZ, port triggers and
-  Wi-Fi networks and parental control are done; next DNS, UPnP and Wi-Fi advanced settings. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
+  Wi-Fi networks, parental control and static DNS are done; next UPnP and Wi-Fi advanced settings. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
 - Role-based authorization: Nuvytrix has a single administrator role today. Roles become relevant
   only with more users; writes would be limited to the administrator.
