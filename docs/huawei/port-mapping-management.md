@@ -49,7 +49,9 @@ reads the page back and compares.
 1. Script `~/router-research/pmtest.py`: added `NuvytrixTest` (TCP 40001 → `.250`:40001, off),
    changed it to UDP 40002–40003 → 40002 and on, deleted it; each step read back. The router ended
    with no mappings, as before.
-2. Through the deployed Nuvytrix: see the parity table.
+2. Through the deployed Nuvytrix on 2026-11-16: a forward to the router itself was refused with
+   nothing sent; `NuvytrixTest` added (off, TCP 40001 → `.250`), changed to UDP 40002–40003 → 40002,
+   turned on, turned off and deleted. Five `audit_logs` rows, all `applied`; no mappings left.
 
 ## Undo
 

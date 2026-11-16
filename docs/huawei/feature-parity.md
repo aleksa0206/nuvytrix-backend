@@ -46,7 +46,7 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | Precise device access control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | Device access control (Telnet/HTTP from LAN/Wi-Fi) | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | risk of locking out the web UI |
 | DMZ | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
-| IPv4 port mapping: add / edit / delete, on / off | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding | ✅ 2026-11-16 (script) | one port range per mapping is edited here; mappings with several ranges can only be deleted |
+| IPv4 port mapping: add / edit / delete, on / off | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding | ✅ 2026-11-16: script, then through Nuvytrix (router as target refused; add off, edit to UDP range, on, off, delete) | one port range per mapping is edited here; mappings with several ranges can only be deleted |
 | Port trigger | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | UPnP mappings (live) | ✅ | ✅ (UPnP) | — | ✅ | ✅ | ✅ | |
 | UPnP on/off | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
