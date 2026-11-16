@@ -38,6 +38,11 @@ export const ALLOWED_PAGES = {
   // Form token for radio settings; the values are read back from `wifi`.
   wifiAdvanced: '/html/amp/wlanadv/WlanAdvance.asp',
   led: '/html/ssmp/ledcfg/ledcfg.asp',
+  // Diagnostics: started from the page, results polled from the Get*Result pages.
+  diagnostics: '/html/bbsp/maintenance/diagnosecommon.asp',
+  pingResult: '/html/bbsp/maintenance/GetPingResult.asp',
+  traceResult: '/html/bbsp/maintenance/GetRouteResult.asp',
+  userLog: '/html/ssmp/userlog/normallogview.asp',
   // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
   wanList: '/html/bbsp/common/wan_list.asp',
 } as const;
@@ -66,6 +71,8 @@ export const WRITABLE_PAGES = {
   wifiSchedule: ['set'],
   wifiAdvanced: ['set'],
   led: ['set'],
+  // Starts a ping or traceroute; changes no setting.
+  diagnostics: ['complex'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;
@@ -281,7 +288,8 @@ function checkForm(form: FormSubmission): string | null {
   }
   // Extra objects are router paths, or a path inside the object being added (GROUP_a_x.…).
   const badExtra = Object.values(form.extraQuery ?? {}).find(
-    (value) => !/^(InternetGatewayDevice|GROUP_a_x)(\.[A-Za-z0-9_]+)+$/.test(value)
+    // Router paths, a path inside the object being added (GROUP_a_x.…), or a plain flag word.
+    (value) => !/^((InternetGatewayDevice|GROUP_a_x)(\.[A-Za-z0-9_]+)+|[A-Za-z]{1,32})$/.test(value)
   );
   return badExtra === undefined ? null : `Refusing malformed object path ${badExtra}`;
 }

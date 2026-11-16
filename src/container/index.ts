@@ -33,6 +33,7 @@ import { RouterUpnpService } from '../modules/router/routerUpnp.service';
 import { RouterWifiScheduleService } from '../modules/router/routerWifiSchedule.service';
 import { RouterWifiRadioService } from '../modules/router/routerWifiRadio.service';
 import { RouterLedService } from '../modules/router/routerLed.service';
+import { RouterDiagnosticsService } from '../modules/router/routerDiagnostics.service';
 import { RouterWriter } from '../modules/router/routerWriter';
 import { HUAWEI_UPNP_DEFAULTS, UpnpClient } from '../modules/router/upnpClient';
 
@@ -42,6 +43,7 @@ export interface ContainerOverrides {
   adguardClient?: AdGuardClient;
   routerWebClient?: HuaweiWebClient;
   routerWritesEnabled?: boolean;
+  routerDiagnosticsTiming?: { pollMs: number; maxWaitMs: number };
   upnpClient?: UpnpClient;
 }
 
@@ -82,6 +84,7 @@ class Container {
   public routerWifiScheduleService: RouterWifiScheduleService;
   public routerWifiRadioService: RouterWifiRadioService;
   public routerLedService: RouterLedService;
+  public routerDiagnosticsService: RouterDiagnosticsService;
 
   constructor(overrides: ContainerOverrides = {}) {
     this.auditRepository = new AuditRepository(db);
@@ -183,6 +186,10 @@ class Container {
     this.routerWifiScheduleService = new RouterWifiScheduleService(routerWriter);
     this.routerWifiRadioService = new RouterWifiRadioService(routerWriter);
     this.routerLedService = new RouterLedService(routerWriter);
+    this.routerDiagnosticsService = new RouterDiagnosticsService(
+      routerWriter,
+      overrides.routerDiagnosticsTiming
+    );
     this.routerParentalService = new RouterParentalService(routerWriter, {
       protectedAddresses: env.ROUTER_PROTECTED_ADDRESSES,
     });

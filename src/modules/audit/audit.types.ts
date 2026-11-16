@@ -54,7 +54,8 @@ export type AuditAction =
   | 'router.upnp_changed'
   | 'router.wifi_schedule_changed'
   | 'router.wifi_radio_changed'
-  | 'router.led_changed';
+  | 'router.led_changed'
+  | 'router.diagnostics_run';
 
 export interface AuditEntry {
   adminId: number | null;

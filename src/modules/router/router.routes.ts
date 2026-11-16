@@ -25,6 +25,7 @@ import { wifiCreateSchema, wifiIndexSchema, wifiUpdateSchema } from './routerWif
 import { wifiScheduleSchema } from './routerWifiSchedule.service';
 import { CHANNELS, POWER_LEVELS, wifiRadioSchema } from './routerWifiRadio.service';
 import { ledSchema } from './routerLed.service';
+import { diagnosticsSchema } from './routerDiagnostics.service';
 import {
   parentalDeviceParams,
   parentalDeviceSchema,
@@ -1355,6 +1356,46 @@ router.put(
       requestContext(req)
     );
     res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/diagnostics:
+ *   post:
+ *     summary: Run a ping or traceroute from the router itself ({ kind, host }) and wait for it
+ *     description: >
+ *       Changes no setting. Waits up to 90 seconds; a state of Requested means the router was still
+ *       running the test. Audited.
+ *     tags: [Router maintenance]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: "{ state, output }" }
+ * /router/user-log:
+ *   get:
+ *     summary: The router's user log entries (the header with serial number is left out)
+ *     tags: [Router maintenance]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: "{ entries }" }
+ */
+router.post(
+  '/diagnostics',
+  validateBody(diagnosticsSchema),
+  asyncHandler(async (req, res) => {
+    res.json(
+      await container.routerDiagnosticsService.run(
+        req.body,
+        req.admin!.adminId,
+        requestContext(req)
+      )
+    );
+  })
+);
+router.get(
+  '/user-log',
+  asyncHandler(async (_req, res) => {
+    res.json({ entries: await container.routerDiagnosticsService.userLog() });
   })
 );
 

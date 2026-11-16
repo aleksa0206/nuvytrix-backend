@@ -42,6 +42,10 @@ const PAGES: Record<RouterPage, string> = {
   wifiSchedule: '',
   wifiAdvanced: '',
   led: '',
+  diagnostics: '',
+  pingResult: '',
+  traceResult: '',
+  userLog: '',
 };
 
 class FakeWeb extends HuaweiWebClient {
