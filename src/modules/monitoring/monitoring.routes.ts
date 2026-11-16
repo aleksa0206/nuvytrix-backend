@@ -7,6 +7,7 @@ import { container } from '../../container';
 import {
   createTargetSchema,
   idParamSchema,
+  outageQuerySchema,
   seriesQuerySchema,
   updateTargetSchema,
 } from './monitoring.schema';
@@ -146,6 +147,30 @@ router.get(
   asyncHandler(async (_req, res) => {
     res.json(
       await container.monitoringService.getSeries(res.locals.params.id, res.locals.query.hours)
+    );
+  })
+);
+
+/**
+ * @swagger
+ * /monitoring/targets/{id}/outages:
+ *   get:
+ *     summary: Outages of a target (two or more failed checks in a row), newest first
+ *     tags: [Monitoring]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
+ *       - { in: query, name: days, schema: { type: integer, minimum: 1, maximum: 90 } }
+ *     responses:
+ *       200: { description: "{ days, outages: [{ start, end, durationSeconds, checks, error }] }" }
+ */
+router.get(
+  '/targets/:id/outages',
+  validateParams(idParamSchema),
+  validateQuery(outageQuerySchema),
+  asyncHandler(async (_req, res) => {
+    res.json(
+      await container.monitoringService.getOutages(res.locals.params.id, res.locals.query.days)
     );
   })
 );

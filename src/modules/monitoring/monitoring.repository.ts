@@ -4,7 +4,7 @@ import type { ProbeResult } from './probes';
 export interface TargetRow {
   id: number;
   name: string;
-  kind: 'icmp' | 'dns';
+  kind: 'icmp' | 'dns' | 'http';
   host: string;
   dns_query_name: string | null;
   enabled: boolean;
@@ -28,6 +28,9 @@ export interface LatestResult {
   latency_ms: number | null;
   packet_loss_percent: number | null;
   error: string | null;
+  jitter_ms: number | null;
+  http_status: number | null;
+  cert_expires_at: Date | null;
 }
 
 export type TargetFields = Pick<TargetRow, 'name' | 'kind' | 'host' | 'dns_query_name' | 'enabled'>;
@@ -80,13 +83,26 @@ export class MonitoringRepository {
       latency_ms: result.latencyMs,
       packet_loss_percent: result.packetLossPercent,
       error: result.error,
+      jitter_ms: result.jitterMs ?? null,
+      http_status: result.httpStatus ?? null,
+      cert_expires_at: result.certExpiresAt ?? null,
     });
   }
 
   findLatestResults(): Promise<LatestResult[]> {
     return this.db('monitoring_results')
       .distinctOn('target_id')
-      .select('target_id', 'checked_at', 'success', 'latency_ms', 'packet_loss_percent', 'error')
+      .select(
+        'target_id',
+        'checked_at',
+        'success',
+        'latency_ms',
+        'packet_loss_percent',
+        'error',
+        'jitter_ms',
+        'http_status',
+        'cert_expires_at'
+      )
       .orderBy([{ column: 'target_id' }, { column: 'checked_at', order: 'desc' }]);
   }
 
@@ -125,7 +141,8 @@ export class MonitoringRepository {
         this.db.raw('COUNT(*) FILTER (WHERE success)::int AS successes'),
         this.db.raw('AVG(latency_ms) AS avg_latency_ms'),
         this.db.raw('MAX(latency_ms) AS max_latency_ms'),
-        this.db.raw('AVG(packet_loss_percent) AS avg_packet_loss')
+        this.db.raw('AVG(packet_loss_percent) AS avg_packet_loss'),
+        this.db.raw('AVG(jitter_ms) AS avg_jitter_ms')
       )
       .groupByRaw('1')
       .orderBy('bucket') as unknown as Promise<
@@ -136,8 +153,21 @@ export class MonitoringRepository {
         avg_latency_ms: number | null;
         max_latency_ms: number | null;
         avg_packet_loss: number | null;
+        avg_jitter_ms: number | null;
       }[]
     >;
+  }
+
+  /** Every check of one target since a time, oldest first: enough to find outages. */
+  findChecks(
+    targetId: number,
+    since: Date
+  ): Promise<{ checked_at: Date; success: boolean; error: string | null }[]> {
+    return this.db('monitoring_results')
+      .where('target_id', targetId)
+      .andWhere('checked_at', '>=', since)
+      .orderBy('checked_at')
+      .select('checked_at', 'success', 'error');
   }
 
   deleteResultsBefore(cutoff: Date): Promise<number> {

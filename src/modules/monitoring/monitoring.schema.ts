@@ -7,7 +7,7 @@ export const idParamSchema = z.object({ id: z.coerce.number().int().positive() }
 const HOSTNAME =
   /^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
-const hostSchema = z
+export const hostSchema = z
   .string()
   .trim()
   .max(253)
@@ -16,16 +16,35 @@ const hostSchema = z
     'Must be an IP address or hostname'
   );
 
+/** An http(s) URL without credentials; for HTTP targets. */
+export function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
+
 const targetShape = {
   name: z.string().trim().min(1).max(100),
-  kind: z.enum(['icmp', 'dns']),
-  host: hostSchema,
+  kind: z.enum(['icmp', 'dns', 'http']),
+  // Checked per kind below: an IP or hostname for ping and DNS, a URL for HTTP.
+  host: z.string().trim().min(1).max(255),
   dnsQueryName: z.string().trim().regex(HOSTNAME, 'Must be a domain name').nullable().optional(),
   enabled: z.boolean().optional(),
 };
 
+const hostMatchesKind = (target: { kind?: string; host?: string }) =>
+  target.host === undefined ||
+  (target.kind === 'http' ? isHttpUrl(target.host) : hostSchema.safeParse(target.host).success);
+
 export const createTargetSchema = z
   .object(targetShape)
+  .refine(hostMatchesKind, {
+    message: 'Ping and DNS targets need an IP address or hostname; HTTP targets an http(s) URL',
+    path: ['host'],
+  })
   .refine((target) => target.kind !== 'dns' || isIP(target.host) !== 0, {
     message: 'A DNS target must be the IP address of a resolver',
     path: ['host'],
@@ -39,6 +58,10 @@ export const updateTargetSchema = z
   .object(targetShape)
   .partial()
   .refine((value) => Object.keys(value).length > 0, 'At least one field is required');
+
+export const outageQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(90).default(7),
+});
 
 export const seriesQuerySchema = z.object({
   hours: z.coerce

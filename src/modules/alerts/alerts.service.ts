@@ -9,7 +9,8 @@ export type AlertKind =
   | 'ip_conflict'
   | 'optical_weak'
   | 'optical_ok'
-  | 'optical_loss';
+  | 'optical_loss'
+  | 'certificate_expiring';
 export type AlertSeverity = 'info' | 'warning' | 'error';
 
 interface AlertRow {

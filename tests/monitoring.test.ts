@@ -15,6 +15,9 @@ const NO_REPLY: ProbeResult = {
 
 class FakeProber {
   replies = new Map<string, ProbeResult>();
+  async http(url: string) {
+    return this.replies.get(url) ?? NO_REPLY;
+  }
   async ping(host: string) {
     return this.replies.get(host) ?? NO_REPLY;
   }
@@ -40,6 +43,7 @@ describe('parsePingOutput', () => {
     expect(parsePingOutput(output)).toEqual({
       success: true,
       latencyMs: 0.508,
+      jitterMs: 0.083,
       packetLossPercent: 33.3333,
       error: null,
     });

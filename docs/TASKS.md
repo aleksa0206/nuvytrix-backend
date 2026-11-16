@@ -16,22 +16,22 @@ Status: ⬜ nije počet · 🟨 u radu · ✅ gotovo · ⛔ čeka odobrenje
 
 ## Faza 2 – Inteligencija uređaja
 
-### NVX-02 – Istorija identiteta uređaja (IP/MAC/hostname) ⬜
+### NVX-02 – Istorija identiteta uređaja (IP/MAC/hostname) ✅
 **Opis:** Pamtiti svaku promenu IP adrese, hostname-a i proizvođača po uređaju. Otkriti kad ista IP adresa dobije novi MAC (zamena uređaja ili spoofing) i kad dva MAC-a koriste istu IP (IP konflikt). Izvori: nmap skeniranje i spisak uređaja sa rutera.
 **Prihvatanje:** detalj uređaja prikazuje istoriju promena; obaveštenje za neočekivanu promenu MAC-a i IP konflikt; testovi.
 **Zavisi od:** NVX-01
 
-### NVX-03 – DHCP dodele i način dodele ⬜
+### NVX-03 – DHCP dodele i način dodele ✅
 **Opis:** Iz podataka rutera čuvati način dodele (DHCP ili statička) i preostalo vreme dodele; prikazati kad dodela ističe; povezati rezervacije sa rutera sa uređajem.
 **Prihvatanje:** lista i detalj uređaja prikazuju DHCP/static, istek dodele i oznaku rezervacije.
 **Zavisi od:** NVX-01
 
-### NVX-04 – Istorija dostupnosti uređaja ⬜
+### NVX-04 – Istorija dostupnosti uređaja ✅
 **Opis:** Pamtiti online/offline stanje po uređaju iz čitanja rutera (na 5 min) i nmap skeniranja. Traka dostupnosti po uređaju za 24 h i 7 dana. Opciono obaveštenje kad označeni uređaj (npr. NAS) nestane.
 **Prihvatanje:** grafikon dostupnosti po uređaju; rezolucija (~5 min) jasno napisana u UI-ju.
 **Zavisi od:** NVX-02
 
-### NVX-05 – Upravljanje uređajima: oznake, beleške, poverenje ⬜
+### NVX-05 – Upravljanje uređajima: oznake, beleške, poverenje ✅
 **Opis:** Oznake (tags), kategorija/tip, beleške i status poverenja (trusted/untrusted), uz pretragu i filtere. Proširiti postojeće ime i tip, bez novih ekrana.
 **Prihvatanje:** sve se čuva, filtrira i upisuje u audit; nepoznat uređaj (bez imena i neodobren) jasno označen.
 **Zavisi od:** NVX-01
@@ -40,12 +40,12 @@ Status: ⬜ nije počet · 🟨 u radu · ✅ gotovo · ⛔ čeka odobrenje
 
 ## Faza 3 – Napredni monitoring mreže
 
-### NVX-06 – Jitter, vreme odgovora DNS-a i istorija prekida ⬜
+### NVX-06 – Jitter, vreme odgovora DNS-a i istorija prekida ✅
 **Opis:** Čuvati jitter (mdev iz ping-a) i vreme odgovora DNS ciljeva. Iz rezultata provera izvesti listu prekida (početak, kraj, trajanje). Grafikoni sa jasnom oznakom izvora (merenje sa servera, brojači rutera, spoljni test).
 **Prihvatanje:** grafikon jittera i DNS vremena; lista prekida za internet, ruter i ostale ciljeve.
 **Zavisi od:** NVX-01
 
-### NVX-07 – HTTP/HTTPS ciljevi monitoringa ⬜
+### NVX-07 – HTTP/HTTPS ciljevi monitoringa ✅
 **Opis:** Novi tip cilja HTTP(S): status kod, vreme odgovora, istek sertifikata. Koristiti za 6 sajtova i Nuvytrix.
 **Prihvatanje:** svih 6 sajtova se prati; obaveštenje kad sajt padne i kad sertifikat ističe za manje od 14 dana.
 **Zavisi od:** NVX-06

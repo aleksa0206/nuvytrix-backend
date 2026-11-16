@@ -1,3 +1,4 @@
+import { hostSchema, isHttpUrl } from './monitoring.schema';
 import { isIP } from 'node:net';
 import { AppError, NotFoundError } from '../../common/errors/AppError';
 import { ErrorCode } from '../../common/errors/errorCodes';
@@ -14,6 +15,8 @@ export const INTERNET_TARGET_KEY = 'internet';
 const INTERNET_HOST = '1.1.1.1';
 /** Consecutive failed checks before a target counts as down (one lost check is not an outage). */
 const DOWN_AFTER_FAILURES = 2;
+/** Certificate alert when an HTTPS target's certificate ends within this many days. */
+const CERT_WARNING_DAYS = 14;
 const UPTIME_WINDOW_HOURS = 24;
 const MAX_SERIES_POINTS = 300;
 
@@ -24,7 +27,7 @@ export interface MonitoringSettings {
 
 export interface TargetInput {
   name: string;
-  kind: 'icmp' | 'dns';
+  kind: 'icmp' | 'dns' | 'http';
   host: string;
   dnsQueryName?: string | null;
   enabled?: boolean;
@@ -39,6 +42,7 @@ export class MonitoringService {
    */
   private failures = new Map<number, number>();
   private reportedDown = new Set<number>();
+  private reportedCertificates = new Set<number>();
 
   constructor(
     private monitoringRepository: MonitoringRepository,
@@ -95,13 +99,66 @@ export class MonitoringService {
     const result =
       target.kind === 'icmp'
         ? await this.prober.ping(target.host)
-        : await this.prober.resolve(target.host, target.dns_query_name ?? 'example.com');
+        : target.kind === 'http'
+          ? await this.prober.http(target.host)
+          : await this.prober.resolve(target.host, target.dns_query_name ?? 'example.com');
     await this.monitoringRepository.insertResult(target.id, result);
     if (!result.success) {
       logger.warn({ target: target.name, host: target.host, error: result.error }, 'Check failed');
     }
     await this.trackOutage(target, result);
+    await this.trackCertificate(target, result);
     return result;
+  }
+
+  /** One alert when an HTTPS certificate is about to expire; again only after it was renewed. */
+  private async trackCertificate(target: TargetRow, result: ProbeResult): Promise<void> {
+    if (!this.alerts || !result.certExpiresAt) return;
+    const days = (result.certExpiresAt.getTime() - Date.now()) / 86_400_000;
+    if (days >= CERT_WARNING_DAYS) {
+      this.reportedCertificates.delete(target.id);
+      return;
+    }
+    if (this.reportedCertificates.has(target.id)) return;
+    this.reportedCertificates.add(target.id);
+    await this.alerts.raise(
+      'certificate_expiring',
+      days < 3 ? 'error' : 'warning',
+      `${target.name}: certificate expires in ${Math.max(0, Math.floor(days))} days`,
+      { targetId: target.id, url: target.host, expiresAt: result.certExpiresAt }
+    );
+  }
+
+  /**
+   * Outages from stored checks: runs of at least two failed checks in a row (the same rule as the
+   * down alert), newest first. An outage still going on has no end.
+   */
+  async getOutages(targetId: number, days: number) {
+    await this.findOrThrow(targetId);
+    const checks = await this.monitoringRepository.findChecks(
+      targetId,
+      new Date(Date.now() - days * 86_400_000)
+    );
+    const outages: { start: Date; end: Date | null; checks: number; error: string | null }[] = [];
+    let run: (typeof checks)[number][] = [];
+    const close = (end: Date | null) => {
+      if (run.length >= DOWN_AFTER_FAILURES) {
+        outages.push({ start: run[0]!.checked_at, end, checks: run.length, error: run[0]!.error });
+      }
+      run = [];
+    };
+    for (const check of checks) {
+      if (check.success) close(check.checked_at);
+      else run.push(check);
+    }
+    close(null);
+    return {
+      days,
+      outages: outages.reverse().map((o) => ({
+        ...o,
+        durationSeconds: Math.round(((o.end ?? new Date()).getTime() - o.start.getTime()) / 1000),
+      })),
+    };
   }
 
   /** Raises one alert when a target goes down (after repeated failures) and one when it is back. */
@@ -166,6 +223,9 @@ export class MonitoringService {
               latencyMs: last.latency_ms,
               packetLossPercent: last.packet_loss_percent,
               error: last.error,
+              jitterMs: last.jitter_ms,
+              httpStatus: last.http_status,
+              certExpiresAt: last.cert_expires_at,
             }
           : null,
         lastSuccessAt: successById.get(target.id) ?? null,
@@ -198,6 +258,7 @@ export class MonitoringService {
         avgLatencyMs: roundOrNull(row.avg_latency_ms),
         maxLatencyMs: roundOrNull(row.max_latency_ms),
         avgPacketLossPercent: roundOrNull(row.avg_packet_loss),
+        avgJitterMs: roundOrNull(row.avg_jitter_ms),
       })),
     };
   }
@@ -224,6 +285,15 @@ export class MonitoringService {
       enabled: existing.enabled,
       ...input,
     });
+    if (
+      merged.kind === 'http' ? !isHttpUrl(merged.host) : !hostSchema.safeParse(merged.host).success
+    ) {
+      throw new AppError(
+        ErrorCode.VALIDATION_ERROR,
+        400,
+        'Ping and DNS targets need an IP address or hostname; HTTP targets an http(s) URL'
+      );
+    }
     if (merged.kind === 'dns' && (!merged.dns_query_name || isIP(merged.host) === 0)) {
       throw new AppError(
         ErrorCode.VALIDATION_ERROR,

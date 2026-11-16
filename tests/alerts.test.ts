@@ -16,6 +16,9 @@ const NO_REPLY: ProbeResult = {
 
 class FakeProber {
   replies = new Map<string, ProbeResult>();
+  async http(url: string) {
+    return this.replies.get(url) ?? NO_REPLY;
+  }
   async ping(host: string) {
     return this.replies.get(host) ?? REPLY;
   }
