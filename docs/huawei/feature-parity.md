@@ -49,7 +49,7 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | IPv4 port mapping: add / edit / delete, on / off | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding | ✅ 2026-11-16: script, then through Nuvytrix (router as target refused; add off, edit to UDP range, on, off, delete) | one port range per mapping is edited here; mappings with several ranges can only be deleted |
 | Port trigger: add / edit / delete | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding & DMZ | ✅ 2026-11-16: script, then through Nuvytrix (add off, edit on, delete) | |
 | UPnP mappings (live) | ✅ | ✅ (UPnP) | — | ✅ | ✅ | ✅ | |
-| UPnP on/off | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
+| UPnP on/off | ✅ | ✅ | ✅ | ✅ | ✅ Router → Firewall & UPnP | ✅ 2026-11-16 through Nuvytrix (off, on) | turning it off removes all UPnP mappings; monitoring over UPnP pauses while off |
 | USB / FTP, media sharing | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | no USB device in use |
 | DDNS: add / edit / delete (internet WAN) | ✅ | ✅ (no password) | ✅ | ✅ | ✅ Router → DHCP & DNS | ✅ 2026-11-16: script, then through Nuvytrix with a disabled made-up entry | password write-only; gnudip providers not offered; of no use behind CGNAT |
 | Static DNS entries: add / edit / delete (IPv4 and IPv6) | ✅ | ✅ | ✅ | ✅ | ✅ Router → DHCP & DNS | ✅ 2026-11-16: script, then through Nuvytrix (IPv4 and IPv6) | at most 20; one IPv4 and one IPv6 address per name |
@@ -72,10 +72,10 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
   helps, and shown in Nuvytrix. Tested against the real router.
 - **Configuration parity:** read access exists for every page. The write mechanism (page-relative
   `add.cgi` / `set.cgi` / `del.cgi` with the page token) is verified on 2026-11-16 for the IPv4
-  filter, DHCP reservations, the main DHCP pool, both MAC filters, IPv4 port mapping, DMZ, port triggers, Wi-Fi networks, parental control and static DNS. Other forms use the same mechanism, but each
+  filter, DHCP reservations, the main DHCP pool, both MAC filters, IPv4 port mapping, DMZ, port triggers, Wi-Fi networks, parental control, static DNS, DDNS and the UPnP switch. Other forms use the same mechanism, but each
   still needs its own verification.
 - Write support will be added feature by feature, each only after its request format has been
   verified on the router: IPv4 filter, DHCP, MAC filters, port mapping, DMZ, port triggers and
-  Wi-Fi networks, parental control and static DNS are done; next UPnP and Wi-Fi advanced settings. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
+  Wi-Fi networks, parental control, static and dynamic DNS and UPnP are done; next Wi-Fi advanced settings, device access control and IPv6. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
 - Role-based authorization: Nuvytrix has a single administrator role today. Roles become relevant
   only with more users; writes would be limited to the administrator.
