@@ -26,6 +26,7 @@ import { RouterForwardingService } from '../modules/router/routerForwarding.serv
 import { RouterMacFilterService } from '../modules/router/routerMacFilter.service';
 import { RouterPortMappingService } from '../modules/router/routerPortMapping.service';
 import { RouterWifiService } from '../modules/router/routerWifi.service';
+import { RouterParentalService } from '../modules/router/routerParental.service';
 import { RouterWriter } from '../modules/router/routerWriter';
 import { HUAWEI_UPNP_DEFAULTS, UpnpClient } from '../modules/router/upnpClient';
 
@@ -68,6 +69,7 @@ class Container {
   public routerPortMappingService: RouterPortMappingService;
   public routerForwardingService: RouterForwardingService;
   public routerWifiService: RouterWifiService;
+  public routerParentalService: RouterParentalService;
 
   constructor(overrides: ContainerOverrides = {}) {
     this.auditRepository = new AuditRepository(db);
@@ -163,6 +165,9 @@ class Container {
     });
     this.routerPortMappingService = new RouterPortMappingService(routerWriter);
     this.routerWifiService = new RouterWifiService(routerWriter);
+    this.routerParentalService = new RouterParentalService(routerWriter, {
+      protectedAddresses: env.ROUTER_PROTECTED_ADDRESSES,
+    });
     this.routerForwardingService = new RouterForwardingService(routerWriter, {
       protectedAddresses: env.ROUTER_PROTECTED_ADDRESSES,
     });

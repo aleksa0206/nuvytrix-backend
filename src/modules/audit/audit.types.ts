@@ -34,7 +34,17 @@ export type AuditAction =
   | 'router.port_trigger_deleted'
   | 'router.wifi_network_created'
   | 'router.wifi_network_updated'
-  | 'router.wifi_network_deleted';
+  | 'router.wifi_network_deleted'
+  | 'router.parental_template_created'
+  | 'router.parental_template_updated'
+  | 'router.parental_template_deleted'
+  | 'router.parental_period_created'
+  | 'router.parental_period_deleted'
+  | 'router.parental_url_created'
+  | 'router.parental_url_deleted'
+  | 'router.parental_device_created'
+  | 'router.parental_device_updated'
+  | 'router.parental_device_deleted';
 
 export interface AuditEntry {
   adminId: number | null;

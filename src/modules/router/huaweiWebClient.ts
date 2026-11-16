@@ -25,6 +25,9 @@ export const ALLOWED_PAGES = {
   portTrigger: '/html/bbsp/porttrigger/porttrigger.asp',
   // Lists every SSID of both bands, with their Wi-Fi keys (see above).
   wifi: '/html/amp/wlanbasic/WlanBasic.asp?2G',
+  // Parental control: the forms live on the MAC page, the data in parentalctrlinfo.asp.
+  parental: '/html/bbsp/parentalctrl/parentalctrlmac.asp',
+  parentalInfo: '/html/bbsp/common/parentalctrlinfo.asp',
   // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
   wanList: '/html/bbsp/common/wan_list.asp',
 } as const;
@@ -46,6 +49,7 @@ export const WRITABLE_PAGES = {
   dmz: ['add', 'set', 'del'],
   portTrigger: ['add', 'set', 'del'],
   wifi: ['add', 'set', 'del'],
+  parental: ['add', 'set', 'del'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;
@@ -63,6 +67,8 @@ export interface FormSubmission {
   fields: Record<string, string>;
   /** A request the page sends first in the same session (the Wi-Fi page does before a delete). */
   before?: Omit<FormSubmission, 'page' | 'before'>;
+  /** Page to read back after the write when the data is not on the form's page. */
+  readBack?: RouterPage;
 }
 
 export interface HuaweiWebClientOptions {
@@ -113,7 +119,7 @@ export class HuaweiWebClient {
       await session.read(form.page);
       if (first) await session.post(first);
       await session.post(form);
-      return session.read(form.page);
+      return session.read(form.readBack ?? form.page);
     });
   }
 

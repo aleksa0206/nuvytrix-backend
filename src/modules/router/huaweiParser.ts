@@ -645,3 +645,86 @@ export function wifiKeyMatches(page: string, domain: string, key: string): boole
   );
   return !!entry && (entry[1] === key || entry[2] === key);
 }
+
+export type ParentalMode = 'block' | 'allow';
+
+export interface ParentalPeriod {
+  index: number;
+  /** `HH:MM`. */
+  start: string;
+  end: string;
+  /** 1 = Monday … 7 = Sunday. */
+  days: number[];
+}
+
+export interface ParentalTemplate {
+  index: number;
+  name: string;
+  timeEnabled: boolean;
+  /** block: the periods are blocked; allow: access only during the periods. */
+  timeMode: ParentalMode;
+  urlEnabled: boolean;
+  /** block: the URLs are blocked; allow: only the URLs are reachable. */
+  urlMode: ParentalMode;
+  periods: ParentalPeriod[];
+  urls: { index: number; url: string }[];
+}
+
+export interface ParentalDevice {
+  index: number;
+  mac: string;
+  description: string;
+  template: number;
+}
+
+export interface ParentalState {
+  templates: ParentalTemplate[];
+  devices: ParentalDevice[];
+}
+
+const last = (domain: string) => Number(domain.split('.').pop());
+const modeOf = (policy: string | undefined): ParentalMode => (policy === '1' ? 'allow' : 'block');
+
+/**
+ * parentalctrlinfo.asp: `TemplatesListClass(domain, Name, UrlFilterPolicy, UrlFilterRight,
+ * StartDate, EndDate, DurationPolicy, DurationRight)`, `DurationListClass(domain, StartTime, EndTime,
+ * RepeatDay)`, `UrlFilterUrlAddress(domain, url)`, `ChildListClass(domain, MAC, Description,
+ * TemplateInst)`.
+ */
+export function parseParental(page: string): ParentalState | null {
+  if (!page.includes('function TemplatesListClass')) return null;
+  const under = (rows: string[][], prefix: string) =>
+    rows.filter((r) => (r[0] ?? '').startsWith(prefix));
+  const durations = parseConstructorCalls(page, 'DurationListClass');
+  const urls = parseConstructorCalls(page, 'UrlFilterUrlAddress');
+  return {
+    templates: parseConstructorCalls(page, 'TemplatesListClass')
+      .filter((t) => /\.Templates\.\d+$/.test(t[0] ?? ''))
+      .map((t) => ({
+        index: last(t[0]!),
+        name: t[1] ?? '',
+        urlMode: modeOf(t[2]),
+        urlEnabled: t[3] === '1',
+        timeMode: modeOf(t[6]),
+        timeEnabled: t[7] === '1',
+        periods: under(durations, `${t[0]}.Duration.`).map((d) => ({
+          index: last(d[0]!),
+          start: d[1] ?? '',
+          end: d[2] ?? '',
+          days: (d[3] ?? '').split(',').filter(Boolean).map(Number),
+        })),
+        urls: under(urls, `${t[0]}.UrlFilter.`).map((u) => ({
+          index: last(u[0]!),
+          url: u[1] ?? '',
+        })),
+      })),
+    devices: parseConstructorCalls(page, 'ChildListClass')
+      .filter((c) => /\.MAC\.\d+$/.test(c[0] ?? ''))
+      .map((c) => ({
+        index: last(c[0]!),
+        mac: (c[1] ?? '').toLowerCase(),
+        description: c[2] ?? '',
+        template: Number(c[3]),
+      })),
+  };
+}

@@ -22,6 +22,16 @@ import {
 import { portMappingIndexSchema, portMappingSchema } from './routerPortMapping.schema';
 import { dmzSchema, portTriggerSchema, triggerIndexSchema } from './routerForwarding.schema';
 import { wifiCreateSchema, wifiIndexSchema, wifiUpdateSchema } from './routerWifi.schema';
+import {
+  parentalDeviceParams,
+  parentalDeviceSchema,
+  parentalItemParams,
+  parentalPeriodSchema,
+  parentalTemplateParams,
+  parentalTemplateSchema,
+  parentalTemplateUpdateSchema,
+  parentalUrlSchema,
+} from './routerParental.schema';
 
 const router = Router();
 router.use(requireAuth);
@@ -840,6 +850,195 @@ router.delete(
   validateParams(wifiIndexSchema),
   asyncHandler(async (req, res) => {
     const result = await container.routerWifiService.deleteNetwork(
+      res.locals.params.index,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/parental:
+ *   get:
+ *     summary: Parental control templates (time periods, URL lists) and bound devices, read now
+ *     tags: [Router parental control]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Templates, devices and whether Nuvytrix may change them }
+ * /router/parental/templates:
+ *   post:
+ *     summary: Add a template ({ name })
+ *     tags: [Router parental control]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       201: { description: The new template }
+ * /router/parental/templates/{template}:
+ *   patch:
+ *     summary: Rename a template or switch its time / URL control and mode (block or allow)
+ *     tags: [Router parental control]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Updated template }
+ *   delete:
+ *     summary: Delete a template that no device uses
+ *     tags: [Router parental control]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: New state }
+ * /router/parental/templates/{template}/periods:
+ *   post:
+ *     summary: Add a time period ({ start HH:MM, end HH:MM, days 1=Mon … 7=Sun })
+ *     tags: [Router parental control]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       201: { description: The new period }
+ * /router/parental/templates/{template}/urls:
+ *   post:
+ *     summary: Add a site to the template's URL list ({ url })
+ *     tags: [Router parental control]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       201: { description: The new entry }
+ * /router/parental/devices:
+ *   post:
+ *     summary: Bind a device to a template ({ mac, description, template }); not the server or admin PC
+ *     tags: [Router parental control]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       201: { description: The binding }
+ */
+router.get(
+  '/parental',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerParentalService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getState()) });
+  })
+);
+router.post(
+  '/parental/templates',
+  validateBody(parentalTemplateSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerParentalService.addTemplate(
+      req.body.name,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result.template);
+  })
+);
+router.patch(
+  '/parental/templates/:template',
+  validateParams(parentalTemplateParams),
+  validateBody(parentalTemplateUpdateSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerParentalService.updateTemplate(
+      res.locals.params.template,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.template);
+  })
+);
+router.delete(
+  '/parental/templates/:template',
+  validateParams(parentalTemplateParams),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerParentalService.deleteTemplate(
+      res.locals.params.template,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+router.post(
+  '/parental/templates/:template/periods',
+  validateParams(parentalTemplateParams),
+  validateBody(parentalPeriodSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerParentalService.addPeriod(
+      res.locals.params.template,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result.period);
+  })
+);
+router.delete(
+  '/parental/templates/:template/periods/:item',
+  validateParams(parentalItemParams),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerParentalService.deletePeriod(
+      res.locals.params.template,
+      res.locals.params.item,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+router.post(
+  '/parental/templates/:template/urls',
+  validateParams(parentalTemplateParams),
+  validateBody(parentalUrlSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerParentalService.addUrl(
+      res.locals.params.template,
+      req.body.url,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result.url);
+  })
+);
+router.delete(
+  '/parental/templates/:template/urls/:item',
+  validateParams(parentalItemParams),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerParentalService.deleteUrl(
+      res.locals.params.template,
+      res.locals.params.item,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+router.post(
+  '/parental/devices',
+  validateBody(parentalDeviceSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerParentalService.addDevice(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result.device);
+  })
+);
+router.put(
+  '/parental/devices/:index',
+  validateParams(parentalDeviceParams),
+  validateBody(parentalDeviceSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerParentalService.updateDevice(
+      res.locals.params.index,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.device);
+  })
+);
+router.delete(
+  '/parental/devices/:index',
+  validateParams(parentalDeviceParams),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerParentalService.deleteDevice(
       res.locals.params.index,
       req.admin!.adminId,
       requestContext(req)
