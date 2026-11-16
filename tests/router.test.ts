@@ -172,6 +172,32 @@ describe('router integration', () => {
     expect(history.points.map((p) => p.wanDownloadBps)).toEqual([null, 1_000_000, null]);
   });
 
+  it('computes LAN-side rates from the sum of LAN port and Wi-Fi counters', async () => {
+    const base = Date.now() - 60_000;
+    await container.routerService.poll();
+    await container.routerService.poll();
+    const ids = (await db('router_samples').orderBy('id').select('id')).map((row) => row.id);
+    const counters = (sent: number) => ({
+      lan_ports: JSON.stringify([{ bytesSent: sent, bytesReceived: 0 }]),
+      wlan: JSON.stringify([
+        { bytesSent: sent, bytesReceived: 0 },
+        { bytesSent: 0, bytesReceived: 0 },
+      ]),
+    });
+    await db('router_samples')
+      .where('id', ids[0])
+      .update({ captured_at: new Date(base), ...counters(1_000_000) });
+    await db('router_samples')
+      .where('id', ids[1])
+      .update({ captured_at: new Date(base + 10_000), ...counters(1_625_000) });
+
+    const history = await container.routerService.getHistory(1);
+
+    // (2 × 625 000 bytes × 8) / 10 s
+    expect(history.points.map((p) => p.lanDownloadBps)).toEqual([null, 1_000_000]);
+    expect(history.points.map((p) => p.lanUploadBps)).toEqual([null, 0]);
+  });
+
   it('imports the router firewall log once and skips repeated reads of the same log', async () => {
     const first = await container.routerService.importFirewallLog();
     const second = await container.routerService.importFirewallLog();

@@ -29,6 +29,8 @@ export interface RouterSampleRow {
   wan_bytes_received: number | null;
   wifi_clients: number | null;
   devices_online: number | null;
+  lan_ports: { bytesSent: number; bytesReceived: number }[] | null;
+  wlan: { bytesSent: number; bytesReceived: number }[] | null;
 }
 
 export class RouterRepository {
@@ -68,7 +70,9 @@ export class RouterRepository {
         'wan_bytes_sent',
         'wan_bytes_received',
         'wifi_clients',
-        'devices_online'
+        'devices_online',
+        'lan_ports',
+        'wlan'
       );
   }
 

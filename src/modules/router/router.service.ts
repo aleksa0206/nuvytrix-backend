@@ -21,7 +21,7 @@ import {
   type WlanInterface,
 } from './huaweiParser';
 import type { HuaweiWebClient } from './huaweiWebClient';
-import type { RouterRepository } from './router.repository';
+import type { RouterRepository, RouterSampleRow } from './router.repository';
 import type { PortMapping, UpnpClient, WanStatus } from './upnpClient';
 
 export interface RouterSnapshot {
@@ -246,6 +246,14 @@ export class RouterService {
           opticalTemperatureC: row.optical_temperature_c,
           wanDownloadBps: rate(row.wan_bytes_received, previous?.wan_bytes_received),
           wanUploadBps: rate(row.wan_bytes_sent, previous?.wan_bytes_sent),
+          // The UPnP WAN counters miss hardware-accelerated (forwarded) traffic, so real use is
+          // measured on the LAN side: bytes the router sent to / received from LAN ports and Wi-Fi.
+          // This includes traffic between local devices as well as internet traffic.
+          lanDownloadBps: rate(lanTotal(row, 'bytesSent'), previous && lanTotal(previous, 'bytesSent')),
+          lanUploadBps: rate(
+            lanTotal(row, 'bytesReceived'),
+            previous && lanTotal(previous, 'bytesReceived')
+          ),
           wifiClients: row.wifi_clients,
           devicesOnline: row.devices_online,
         };
@@ -258,4 +266,9 @@ export class RouterService {
       new Date(Date.now() - this.settings.retentionDays * 86_400_000)
     );
   }
+}
+
+function lanTotal(row: RouterSampleRow, field: 'bytesSent' | 'bytesReceived'): number | null {
+  if (!row.lan_ports || !row.wlan) return null;
+  return [...row.lan_ports, ...row.wlan].reduce((sum, item) => sum + (item[field] ?? 0), 0);
 }

@@ -13,7 +13,8 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | CPU / memory | ✅ | ✅ | — | ✅ + history | ✅ chart | ✅ | percentages only |
 | ONT registration state | ✅ | ✅ | — | ✅ | ✅ | ✅ | |
 | WAN status, external IP, NAT | ✅ | ✅ (UPnP) | ⚠️ ISP-managed | ✅ | ✅ | ✅ | detailed WAN fields ⏳ |
-| WAN traffic counters | ✅ | ✅ (UPnP) | — | ✅ + rate history | ✅ chart | ✅ | 32-bit counters, reset on reconnect |
+| WAN traffic counters | ✅ | ⚠️ (UPnP) | — | ✅ stored | ❌ not charted | ✅ | UPnP counters miss hardware-forwarded traffic (0.5 MB vs ~225 MB on LAN in the same 5 min); the chart uses LAN + Wi-Fi counters instead |
+| Traffic to devices (LAN + Wi-Fi) | ✅ | ✅ | — | ✅ rate history | ✅ chart | ✅ | includes local device-to-device traffic |
 | Optical module (Rx/Tx, temperature, voltage, bias) | ✅ | ✅ | — | ✅ + history | ✅ chart | ✅ | no router-side history |
 | GPON interface counters | ✅ | ✅ | — | ❌ | ❌ | ❌ | low value; not built |
 | Service provisioning status | ✅ | ✅ | — | ❌ | ❌ | ❌ | ISP flags |
