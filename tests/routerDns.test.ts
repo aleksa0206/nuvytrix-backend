@@ -124,6 +124,20 @@ describe('router static DNS', () => {
     expect(res.body.details.map((d: { path: string }) => d.path)).toContain(path);
   });
 
+  it('keeps one IPv4 and one IPv6 address per name', async () => {
+    const agent = await signedInAgent();
+    await agent.post('/api/router/dns-hosts').send({ name: 'nas.lan', ip: '192.168.100.50' });
+
+    const v6 = await agent.post('/api/router/dns-hosts').send({ name: 'nas.lan', ip: 'fd00::50' });
+    const v6again = await agent
+      .post('/api/router/dns-hosts')
+      .send({ name: 'nas.lan', ip: 'fd00::51' });
+
+    expect(v6.status).toBe(201);
+    expect(v6.body.ip).toBe('fd00::50');
+    expect(v6again.status).toBe(422);
+  });
+
   it('refuses a second entry for a name and more than 20 entries', async () => {
     const agent = await signedInAgent();
     await agent.post('/api/router/dns-hosts').send({ name: 'nas.lan', ip: '192.168.100.50' });

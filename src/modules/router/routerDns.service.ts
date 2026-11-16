@@ -105,8 +105,14 @@ export class RouterDnsService {
     this.writer.requireWritable();
     const hosts = await this.getHosts();
     if (index !== undefined) find(hosts, index);
-    if (hosts.some((h) => h.name === input.name && h.index !== index)) {
-      throw refuse(`${input.name} already has an entry`);
+    // As on the router's page: one IPv4 and one IPv6 address per name.
+    const family = (ip: string) => (ip.includes(':') ? 'IPv6' : 'IPv4');
+    if (
+      hosts.some(
+        (h) => h.name === input.name && family(h.ip) === family(input.ip) && h.index !== index
+      )
+    ) {
+      throw refuse(`${input.name} already has an ${family(input.ip)} entry`);
     }
     return hosts;
   }

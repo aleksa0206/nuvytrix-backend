@@ -13,7 +13,8 @@ const hostName = z
 
 export const dnsHostSchema = z.object({
   name: hostName,
-  ip: z.ipv4({ message: 'Must be an IPv4 address' }),
+  /** IPv4 or IPv6; the router keeps one entry per name and address family. */
+  ip: z.union([z.ipv4(), z.ipv6()], { message: 'Must be an IPv4 or IPv6 address' }),
 });
 
 export const dnsHostIndexSchema = z.object({ index: z.coerce.number().int().min(1).max(9999) });
