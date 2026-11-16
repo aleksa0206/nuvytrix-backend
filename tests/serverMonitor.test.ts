@@ -82,7 +82,7 @@ describe('server monitoring', () => {
       temperatureC: 55,
       onBattery: false,
       batteryPercent: 97,
-      netErrors: 3 + 4 + 7 + 8,
+      netErrors: 3 + 7,
       db: { up: true },
     });
     expect(s.disks[0]).toMatchObject({ name: 'System' });

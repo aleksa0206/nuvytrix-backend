@@ -239,13 +239,15 @@ export class ServerMonitorService {
       try {
         const s = await statfs(disk.path);
         const total = s.blocks * s.bsize;
-        const used = total - s.bavail * s.bsize;
+        // Like df: used / (used + available to users); blocks reserved for root are left out.
+        const used = (s.blocks - s.bfree) * s.bsize;
+        const usable = used + s.bavail * s.bsize;
         if (total > 0) {
           out.push({
             name: disk.name,
             totalBytes: total,
             usedBytes: used,
-            percent: round((100 * used) / total),
+            percent: round((100 * used) / usable),
           });
         }
       } catch {
@@ -255,7 +257,7 @@ export class ServerMonitorService {
     return out;
   }
 
-  /** Receive and transmit errors plus drops on physical interfaces, as a running total. */
+  /** Receive and transmit errors on physical interfaces (not drops, which are mostly ignored multicast). */
   private async netErrors(): Promise<number | null> {
     const text = await read(`${this.settings.procRoot}/net/dev`);
     if (!text) return null;
@@ -264,7 +266,7 @@ export class ServerMonitorService {
       const [name, rest] = line.split(':');
       if (!rest || VIRTUAL_NIC.test(name!.trim())) continue;
       const f = rest.trim().split(/\s+/).map(Number);
-      total += (f[2] ?? 0) + (f[3] ?? 0) + (f[10] ?? 0) + (f[11] ?? 0);
+      total += (f[2] ?? 0) + (f[10] ?? 0);
     }
     return total;
   }
