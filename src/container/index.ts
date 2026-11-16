@@ -20,7 +20,9 @@ import { OverviewService } from '../modules/overview/overview.service';
 import { HuaweiWebClient } from '../modules/router/huaweiWebClient';
 import { RouterRepository } from '../modules/router/router.repository';
 import { RouterService } from '../modules/router/router.service';
+import { RouterDhcpService } from '../modules/router/routerDhcp.service';
 import { RouterFirewallService } from '../modules/router/routerFirewall.service';
+import { RouterWriter } from '../modules/router/routerWriter';
 import { HUAWEI_UPNP_DEFAULTS, UpnpClient } from '../modules/router/upnpClient';
 
 export interface ContainerOverrides {
@@ -57,6 +59,7 @@ class Container {
   public routerRepository: RouterRepository;
   public routerService: RouterService;
   public routerFirewallService: RouterFirewallService;
+  public routerDhcpService: RouterDhcpService;
 
   constructor(overrides: ContainerOverrides = {}) {
     this.auditRepository = new AuditRepository(db);
@@ -138,15 +141,15 @@ class Container {
         retentionDays: env.MONITORING_RETENTION_DAYS,
       }
     );
-    this.routerFirewallService = new RouterFirewallService(
-      routerWebClient,
-      this.routerService,
-      this.auditService,
-      {
-        writesEnabled: overrides.routerWritesEnabled ?? env.ROUTER_WRITES_ENABLED,
-        protectedAddresses: [env.ROUTER_HOST, ...env.ROUTER_PROTECTED_ADDRESSES].filter(Boolean),
-      }
-    );
+    const routerWriter = new RouterWriter(routerWebClient, this.auditService, {
+      writesEnabled: overrides.routerWritesEnabled ?? env.ROUTER_WRITES_ENABLED,
+    });
+    this.routerFirewallService = new RouterFirewallService(routerWriter, this.routerService, {
+      protectedAddresses: [env.ROUTER_HOST, ...env.ROUTER_PROTECTED_ADDRESSES].filter(Boolean),
+    });
+    this.routerDhcpService = new RouterDhcpService(routerWriter, {
+      protectedAddresses: env.ROUTER_PROTECTED_ADDRESSES,
+    });
 
     this.overviewService = new OverviewService(
       db,

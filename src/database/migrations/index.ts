@@ -5,6 +5,7 @@ import * as firewall from './20261114000003_firewall';
 import * as firewallPolicies from './20261114000004_firewall_policies';
 import * as monitoring from './20261114000005_monitoring';
 import * as routerSamples from './20261115000006_router_samples';
+import * as auditEntityLength from './20261116000007_audit_entity_length';
 
 type Migration = Knex.Migration;
 
@@ -17,6 +18,7 @@ const migrations: Record<string, Migration> = {
   '20261114000004_firewall_policies': firewallPolicies,
   '20261114000005_monitoring': monitoring,
   '20261115000006_router_samples': routerSamples,
+  '20261116000007_audit_entity_length': auditEntityLength,
 };
 
 export const migrationSource: Knex.MigrationSource<string> = {

@@ -24,6 +24,8 @@ const PAGES: Record<RouterPage, string> = {
   devices: DEVICES_PAGE,
   firewallLog: FIREWALL_LOG_PAGE,
   ipFilter: IP_FILTER_PAGE,
+  dhcpServer: '',
+  dhcpStatic: '',
 };
 
 class FakeWeb extends HuaweiWebClient {

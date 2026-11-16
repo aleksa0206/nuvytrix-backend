@@ -386,3 +386,55 @@ export function parseIpFilter(page: string): IpFilterState | null {
       })),
   };
 }
+
+export interface DhcpServerState {
+  enabled: boolean;
+  /** The router's LAN address and mask; the pool must stay inside this subnet. */
+  lanIp: string;
+  subnetMask: string;
+  startIp: string;
+  endIp: string;
+  leaseSeconds: number;
+  /** DNS servers handed out by DHCP; empty means the router itself. */
+  dnsServers: string[];
+}
+
+/** dhcp2.asp (LAN > DHCP Server): the main pool. */
+export function parseDhcpServer(page: string): DhcpServerState | null {
+  const main = parseConstructorCalls(page, 'dhcpmainst').find((c) => c.length >= 19);
+  const lan = parseConstructorCalls(page, 'stipaddr').find((c) =>
+    /IPInterface\.1$/.test(c[0] ?? '')
+  );
+  if (!main || !lan) return null;
+  const dns = main[16] || main[18] || '';
+  return {
+    enabled: main[1] === '1',
+    lanIp: lan[2] ?? '',
+    subnetMask: lan[3] ?? '',
+    startIp: main[2] ?? '',
+    endIp: main[3] ?? '',
+    leaseSeconds: Number(main[4]),
+    dnsServers: dns.split(',').filter(Boolean),
+  };
+}
+
+export interface DhcpReservation {
+  /** TR-098 path, which identifies the reservation on the router. */
+  domain: string;
+  enabled: boolean;
+  ip: string;
+  mac: string;
+}
+
+/** dhcpstatic.asp (LAN > DHCP Static IP). Null when the page is not the reservation page. */
+export function parseDhcpReservations(page: string): DhcpReservation[] | null {
+  if (!page.includes('function stDhcp')) return null;
+  return parseConstructorCalls(page, 'stDhcp')
+    .filter((r) => /DHCPStaticAddress\.\d+$/.test(r[0] ?? ''))
+    .map((r) => ({
+      domain: r[0]!,
+      enabled: r[1] === '1',
+      ip: r[2] ?? '',
+      mac: (r[3] ?? '').toLowerCase(),
+    }));
+}

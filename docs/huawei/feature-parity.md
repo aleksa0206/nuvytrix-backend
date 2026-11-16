@@ -32,8 +32,8 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | WAN configuration | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | **not planned:** ISP-provisioned, TR-069 overwrites it, a mistake cuts the internet |
 | LAN host (address, mask) | ✅ | ✅ | ✅ | ⚠️ read in parser | ❌ | ❌ | changing it disconnects every device |
-| DHCP server (pool, lease) | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | write format not analysed yet |
-| DHCP static IP | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | good next candidate |
+| DHCP server: pool range and lease time | ✅ | ✅ | ✅ | ✅ | ✅ Router → DHCP | ✅ 2026-11-16: lease 86400 → 43200 → 86400 (script), then through Nuvytrix | turning the DHCP server off, the secondary pool, DHCP options and DNS handed out are not offered yet |
+| DHCP static IP (reservations): add / edit / delete | ✅ | ✅ | ✅ | ✅ | ✅ Router → DHCP | ✅ 2026-11-16: add, change address, delete (script), then through Nuvytrix | an address held by another device is refused |
 | DHCPv6 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | |
 | IPv4 filtering: view state and rules | ✅ | ✅ | — | ✅ | ✅ Router → Firewall | ✅ | |
 | IPv4 filtering: add / edit / delete rules (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → Firewall | ✅ 2026-11-16: ALL, TCP with ports, TCP/UDP with ports and LAN range | direction is always Bidirectional on this firmware |
@@ -70,11 +70,11 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 - **Monitoring parity:** every status page with operational value is read, stored where history
   helps, and shown in Nuvytrix. Tested against the real router.
 - **Configuration parity:** read access exists for every page. The write mechanism (page-relative
-  `add.cgi` / `del.cgi` with the page token) was verified on 2026-11-16 by adding and deleting an IPv4
-  filter rule, both from the router UI and from the server. Other forms use the same mechanism, but
-  each still needs its own verification.
+  `add.cgi` / `set.cgi` / `del.cgi` with the page token) is verified on 2026-11-16 for the IPv4
+  filter, DHCP reservations and the main DHCP pool. Other forms use the same mechanism, but each
+  still needs its own verification.
 - Write support will be added feature by feature, each only after its request format has been
-  verified on the router: first IPv4 filter, then DHCP reservations, MAC filters, port mapping, DMZ
-  and UPnP. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
+  verified on the router: IPv4 filter and DHCP are done; next MAC filters, port mapping, DMZ, port
+  triggering, Wi-Fi and parental controls. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
 - Role-based authorization: Nuvytrix has a single administrator role today. Roles become relevant
   only with more users; writes would be limited to the administrator.

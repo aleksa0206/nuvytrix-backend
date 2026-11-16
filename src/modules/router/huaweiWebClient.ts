@@ -15,6 +15,8 @@ export const ALLOWED_PAGES = {
   devices: '/html/bbsp/common/GetLanUserDevInfo.asp',
   firewallLog: '/html/bbsp/firewalllog/firewalllogview.asp',
   ipFilter: '/html/bbsp/ipincoming/ipincoming.asp',
+  dhcpServer: '/html/bbsp/dhcpservercfg/dhcp2.asp',
+  dhcpStatic: '/html/bbsp/dhcpstatic/dhcpstatic.asp',
 } as const;
 
 export type RouterPage = keyof typeof ALLOWED_PAGES;
@@ -25,6 +27,8 @@ export type RouterPage = keyof typeof ALLOWED_PAGES;
  */
 export const WRITABLE_PAGES = {
   ipFilter: ['add', 'set', 'del'],
+  dhcpServer: ['set'],
+  dhcpStatic: ['add', 'set', 'del'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;
@@ -33,8 +37,10 @@ export type WriteAction = (typeof WRITABLE_PAGES)[WritablePage][number];
 export interface FormSubmission {
   page: WritablePage;
   action: WriteAction;
-  /** TR-098 object for add/set (`x=` in the URL); omitted for del. */
+  /** TR-098 object in the URL (`x=` by default); some pages also send it for del. */
   object?: string;
+  /** The URL key the page uses for the object, e.g. `z` on the DHCP server page. Default `x`. */
+  objectKey?: string;
   fields: Record<string, string>;
 }
 
@@ -89,6 +95,9 @@ export class HuaweiWebClient {
     ) {
       return Promise.reject(new Error(`Refusing malformed object path ${form.object}`));
     }
+    if (form.objectKey !== undefined && !/^[a-z]$/.test(form.objectKey)) {
+      return Promise.reject(new Error(`Refusing object key ${form.objectKey}`));
+    }
     return this.withSession(async (session) => {
       await session.read(form.page);
       await session.post(form);
@@ -125,7 +134,9 @@ export class HuaweiWebClient {
         const pagePath = ALLOWED_PAGES[form.page];
         const directory = pagePath.slice(0, pagePath.lastIndexOf('/') + 1);
         // Same URL the page builds: the CGI is relative to the page, RequestFile has no leading slash.
-        const query = (form.object ? `x=${form.object}&` : '') + `RequestFile=${pagePath.slice(1)}`;
+        const query =
+          (form.object ? `${form.objectKey ?? 'x'}=${form.object}&` : '') +
+          `RequestFile=${pagePath.slice(1)}`;
         const response = await this.request(`${directory}${form.action}.cgi?${query}`, {
           method: 'POST',
           headers: {

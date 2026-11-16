@@ -12,6 +12,7 @@ import {
   ipFilterSettingsSchema,
   ruleIndexSchema,
 } from './routerFirewall.schema';
+import { dhcpReservationSchema, dhcpServerSchema } from './routerDhcp.schema';
 
 const router = Router();
 router.use(requireAuth);
@@ -228,6 +229,132 @@ router.delete(
   validateParams(ruleIndexSchema),
   asyncHandler(async (req, res) => {
     const result = await container.routerFirewallService.deleteRule(
+      res.locals.params.index,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/dhcp:
+ *   get:
+ *     summary: Main DHCP pool and static reservations, read from the router now
+ *     tags: [Router DHCP]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: DHCP state and whether Nuvytrix may change it }
+ *       503: { description: Router not configured or not reachable }
+ *   patch:
+ *     summary: Change the main DHCP pool range and lease time
+ *     description: >
+ *       Refused when the pool leaves the LAN subnet, includes the router, or would leave out a
+ *       protected address or a reservation. Read back after saving. Audited.
+ *     tags: [Router DHCP]
+ *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [startIp, endIp, leaseSeconds]
+ *             properties:
+ *               startIp: { type: string }
+ *               endIp: { type: string }
+ *               leaseSeconds: { type: integer, minimum: 60, maximum: 6048000 }
+ *     responses:
+ *       200: { description: New DHCP server state }
+ *       403: { description: ROUTER_WRITES_ENABLED is off }
+ *       422: { description: Refused }
+ *       502: { description: The router did not apply the change }
+ * /router/dhcp/reservations:
+ *   post:
+ *     summary: Reserve an address for a MAC address
+ *     description: Refused when the address is outside the LAN, reserved, or held by another device.
+ *     tags: [Router DHCP]
+ *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [mac, ip]
+ *             properties:
+ *               mac: { type: string, example: 'aa:bb:cc:dd:ee:ff' }
+ *               ip: { type: string, example: '192.168.100.50' }
+ *     responses:
+ *       201: { description: Reservation as stored on the router }
+ * /router/dhcp/reservations/{index}:
+ *   put:
+ *     summary: Change a reservation (index from DHCPStaticAddress.{index})
+ *     tags: [Router DHCP]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: Updated reservation }
+ *       404: { description: No such reservation on the router }
+ *   delete:
+ *     summary: Delete a reservation; it is kept in the audit log
+ *     tags: [Router DHCP]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: Remaining reservations }
+ */
+router.get(
+  '/dhcp',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerDhcpService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getState()) });
+  })
+);
+router.patch(
+  '/dhcp',
+  validateBody(dhcpServerSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDhcpService.changeServer(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+router.post(
+  '/dhcp/reservations',
+  validateBody(dhcpReservationSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDhcpService.addReservation(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result);
+  })
+);
+router.put(
+  '/dhcp/reservations/:index',
+  validateParams(ruleIndexSchema),
+  validateBody(dhcpReservationSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDhcpService.updateReservation(
+      res.locals.params.index,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result);
+  })
+);
+router.delete(
+  '/dhcp/reservations/:index',
+  validateParams(ruleIndexSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDhcpService.deleteReservation(
       res.locals.params.index,
       req.admin!.adminId,
       requestContext(req)

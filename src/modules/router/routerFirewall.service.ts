@@ -1,28 +1,21 @@
 import { AppError } from '../../common/errors/AppError';
 import { ErrorCode } from '../../common/errors/errorCodes';
 import type { RequestContext } from '../auth/auth.types';
-import { logger } from '../../config/logger';
-import type { AuditService } from '../audit/audit.service';
 import type { AuditAction } from '../audit/audit.types';
 import { parseIpFilter, type IpFilterRule, type IpFilterState } from './huaweiParser';
-import {
-  RouterAuthError,
-  RouterUnavailableError,
-  type FormSubmission,
-  type HuaweiWebClient,
-} from './huaweiWebClient';
+import type { FormSubmission } from './huaweiWebClient';
 import type { RouterService } from './router.service';
 import {
   ipToInt,
   type IpFilterRuleInput,
   type IpFilterSettingsInput,
 } from './routerFirewall.schema';
+import type { RouterWriter } from './routerWriter';
 
 const FILTER_OBJECT = 'InternetGatewayDevice.X_HW_Security';
 const RULE_OBJECT = `${FILTER_OBJECT}.IpFilterIn`;
 
 export interface RouterFirewallSettings {
-  writesEnabled: boolean;
   /** LAN addresses no blacklist rule may cover: the router itself, the server, the admin's PC. */
   protectedAddresses: string[];
 }
@@ -34,20 +27,17 @@ export interface RouterFirewallSettings {
  */
 export class RouterFirewallService {
   constructor(
-    private web: HuaweiWebClient,
+    private writer: RouterWriter,
     private routerService: RouterService,
-    private auditService: AuditService,
     private settings: RouterFirewallSettings
   ) {}
 
   get writesEnabled(): boolean {
-    return this.settings.writesEnabled;
+    return this.writer.writesEnabled;
   }
 
-  /** Reads the filter now (not from the last poll), so edits start from the router's real state. */
   async getState(): Promise<IpFilterState> {
-    this.requireConfigured();
-    const pages = await this.call(() => this.web.fetchPages(['ipFilter'] as const));
+    const pages = await this.writer.read(['ipFilter'] as const);
     return this.parse(pages.ipFilter);
   }
 
@@ -128,14 +118,8 @@ export class RouterFirewallService {
     );
   }
 
-  private requireConfigured() {
-    if (!this.routerService.isConfigured) {
-      throw new AppError(ErrorCode.ROUTER_NOT_CONFIGURED, 503);
-    }
-  }
-
   private async prepareWrite(): Promise<IpFilterState> {
-    if (!this.settings.writesEnabled) throw new AppError(ErrorCode.ROUTER_WRITES_DISABLED, 403);
+    this.writer.requireWritable();
     const state = await this.getState();
     // Rules in whitelist and hybrid mode have other fields and effects; not verified yet.
     if (state.mode !== 'blacklist') {
@@ -172,58 +156,31 @@ export class RouterFirewallService {
     }
   }
 
-  private async write<T extends object>(
+  private write<T extends object>(
     action: AuditAction,
     form: FormSubmission,
     verify: (after: IpFilterState) => T | null,
     adminId: number,
     context: RequestContext,
     details: Record<string, unknown>
-  ): Promise<T & { state: IpFilterState }> {
-    const audit = (outcome: string, extra: Record<string, unknown> = {}) =>
-      this.auditService.record({
-        adminId,
-        action,
-        entityType: 'router_ip_filter',
-        entityId: form.object ?? Object.keys(form.fields)[0],
-        details: { ...details, outcome, ...extra },
-        ipAddress: context.ipAddress,
-      });
-
-    let after: IpFilterState;
-    try {
-      after = this.parse(await this.call(() => this.web.submitForm(form)));
-    } catch (err) {
-      // A timeout can still have changed the router; the next read shows the real state.
-      await audit('failed', { error: (err as Error).message });
-      throw err;
-    }
-    this.routerService.updateIpFilter(after);
-    const verified = verify(after);
-    if (!verified) {
-      await audit('not_applied', { after });
-      logger.warn({ action }, 'Router did not show the requested firewall change');
-      throw new AppError(ErrorCode.ROUTER_WRITE_NOT_APPLIED, 502);
-    }
-    await audit('applied', { after: 'rule' in verified ? verified.rule : after });
-    return { ...verified, state: after };
+  ) {
+    return this.writer.write({
+      action,
+      entityType: 'router_ip_filter',
+      form,
+      parse: (page) => this.parse(page),
+      verify,
+      adminId,
+      context,
+      details,
+    });
   }
 
   private parse(page: string): IpFilterState {
     const state = parseIpFilter(page);
     if (!state) throw new AppError(ErrorCode.ROUTER_UNAVAILABLE, 502, 'IPv4 filter not found');
+    this.routerService.updateIpFilter(state);
     return state;
-  }
-
-  private async call<T>(work: () => Promise<T>): Promise<T> {
-    try {
-      return await work();
-    } catch (err) {
-      if (err instanceof RouterAuthError || err instanceof RouterUnavailableError) {
-        throw new AppError(ErrorCode.ROUTER_UNAVAILABLE, 503, err.message);
-      }
-      throw err;
-    }
   }
 }
 

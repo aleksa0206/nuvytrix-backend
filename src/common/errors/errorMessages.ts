@@ -42,5 +42,5 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   [ErrorCode.ROUTER_WRITE_REFUSED]: 'This change is not allowed',
   [ErrorCode.ROUTER_WRITE_NOT_APPLIED]:
     'The router did not show the change after saving. Check the rules on the router.',
-  [ErrorCode.ROUTER_RULE_NOT_FOUND]: 'The rule no longer exists on the router',
+  [ErrorCode.ROUTER_RULE_NOT_FOUND]: 'This entry no longer exists on the router',
 };

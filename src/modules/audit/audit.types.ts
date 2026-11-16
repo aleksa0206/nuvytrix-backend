@@ -15,7 +15,11 @@ export type AuditAction =
   | 'router.firewall_rule_created'
   | 'router.firewall_rule_updated'
   | 'router.firewall_rule_deleted'
-  | 'router.firewall_settings_changed';
+  | 'router.firewall_settings_changed'
+  | 'router.dhcp_server_changed'
+  | 'router.dhcp_reservation_created'
+  | 'router.dhcp_reservation_updated'
+  | 'router.dhcp_reservation_deleted';
 
 export interface AuditEntry {
   adminId: number | null;
