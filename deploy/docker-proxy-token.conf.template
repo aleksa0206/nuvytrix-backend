@@ -1,0 +1,2 @@
+# Rendered by the nginx image at start-up (envsubst) into /etc/nginx/conf.d/token.conf.
+set $expected_token "${DOCKER_PROXY_TOKEN}";

@@ -93,6 +93,7 @@ const envSchema = z.object({
 
   // Read-only Docker API proxy (docker-proxy in docker-compose.yml); empty turns container monitoring off.
   DOCKER_PROXY_URL: z.union([z.literal(''), z.string().url()]).default(''),
+  DOCKER_PROXY_TOKEN: z.string().default(''),
   ADGUARD_URL: z.union([z.literal(''), z.string().url()]).default(''),
   ADGUARD_USERNAME: z.string().default(''),
   ADGUARD_PASSWORD: z.string().default(''),

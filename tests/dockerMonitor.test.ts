@@ -2,13 +2,14 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { container, resetContainer } from '../src/container';
+import { parseUptime } from '../src/modules/docker/dockerMonitor.service';
 import { closeDatabase, prepareDatabase, signedInAgent } from './helpers/testDb';
 
 /** Stand-in for the Docker API behind the proxy: one site container whose state the test changes. */
 const docker = {
   running: true,
   health: 'healthy',
-  startedAt: '2026-11-16T10:00:00Z',
+  uptime: 'Up 3 hours',
   cpu: 1_000,
   system: 100_000,
   requests: [] as string[],
@@ -31,21 +32,12 @@ beforeAll(async () => {
           Names: ['/remly-web-1'],
           Image: 'remly-web',
           State: docker.running ? 'running' : 'exited',
+          Status: docker.running
+            ? `${docker.uptime} (${docker.health})`
+            : 'Exited (137) 1 minute ago',
           Labels: { 'com.docker.compose.project': 'remly', 'com.docker.compose.service': 'web' },
         },
       ]);
-    }
-    if (req.url === '/containers/abcdef1234567890/json') {
-      return json({
-        RestartCount: 2,
-        State: {
-          Status: docker.running ? 'running' : 'exited',
-          Running: docker.running,
-          StartedAt: docker.startedAt,
-          ExitCode: docker.running ? 0 : 137,
-          Health: { Status: docker.health },
-        },
-      });
     }
     if (req.url?.startsWith('/containers/abcdef1234567890/stats')) {
       return json({
@@ -74,13 +66,24 @@ afterAll(async () => {
   await closeDatabase();
 });
 
+describe('parseUptime', () => {
+  it('turns Docker uptime words into seconds', () => {
+    expect(parseUptime('Up 2 hours (healthy)')).toBe(7200);
+    expect(parseUptime('Up About a minute')).toBe(60);
+    expect(parseUptime('Up About an hour')).toBe(3600);
+    expect(parseUptime('Up Less than a second')).toBe(0);
+    expect(parseUptime('Up 9 days')).toBe(9 * 86_400);
+    expect(parseUptime('Exited (0) 2 days ago')).toBeNull();
+  });
+});
+
 describe('docker monitoring', () => {
   beforeEach(async () => {
     await prepareDatabase();
     Object.assign(docker, {
       running: true,
       health: 'healthy',
-      startedAt: '2026-11-16T10:00:00Z',
+      uptime: 'Up 3 hours',
       requests: [],
     });
     resetContainer({ dockerProxyUrl: baseUrl });
@@ -102,12 +105,13 @@ describe('docker monitoring', () => {
         service: 'web',
         state: 'running',
         health: 'healthy',
-        restartCount: 2,
+        uptimeSeconds: 3 * 3600,
         cpuPercent: 8,
         memoryBytes: 40_000_000,
       }),
     ]);
     expect(docker.requests.every((r) => r.startsWith('GET '))).toBe(true);
+    expect(docker.requests.some((r) => /containers\/[a-f0-9]+\/json/.test(r))).toBe(false);
   });
 
   it('alerts when a container stops, comes back, restarts or turns unhealthy', async () => {
@@ -117,7 +121,7 @@ describe('docker monitoring', () => {
     await service.poll();
     docker.running = true;
     await service.poll();
-    docker.startedAt = '2026-11-16T12:00:00Z';
+    docker.uptime = 'Up 10 seconds';
     await service.poll();
     docker.health = 'unhealthy';
     await service.poll();

@@ -4,6 +4,8 @@ import type { AlertsService } from '../alerts/alerts.service';
 export interface DockerMonitorSettings {
   /** The read-only Docker API proxy (deploy/docker-proxy.conf); empty disables monitoring. */
   baseUrl: string;
+  /** Shared secret the proxy checks in `x-proxy-token`. */
+  token?: string;
 }
 
 export interface ContainerState {
@@ -14,8 +16,9 @@ export interface ContainerState {
   image: string;
   state: string;
   health: string | null;
-  restartCount: number;
-  startedAt: string | null;
+  /** Docker's status text, e.g. "Up 2 hours (healthy)" or "Exited (137) 5 minutes ago". */
+  status: string;
+  /** Approximate: Docker reports uptime in words ("Up 2 hours"). */
   uptimeSeconds: number | null;
   cpuPercent: number | null;
   memoryBytes: number | null;
@@ -41,10 +44,7 @@ export class DockerMonitorService {
   private lastError: { at: Date; message: string } | null = null;
   private previousCpu = new Map<string, CpuReading>();
   /** Last state per container name, to alert on changes; ponytail: in memory, reset on restart. */
-  private known = new Map<
-    string,
-    { running: boolean; healthy: boolean; startedAt: string | null }
-  >();
+  private known = new Map<string, { running: boolean; healthy: boolean; uptime: number | null }>();
 
   constructor(
     private settings: DockerMonitorSettings,
@@ -86,36 +86,36 @@ export class DockerMonitorService {
     }
   }
 
+  /**
+   * Built from the container list only: the per-container inspect call is not allowed by the
+   * proxy, because its output includes every container's environment variables (secrets).
+   */
   private async inspect(item: DockerListItem): Promise<ContainerState> {
     const id = item.Id;
     const name = (item.Names?.[0] ?? id).replace(/^\//, '');
-    const detail = await this.get<DockerInspect>(`/containers/${id}/json`);
-    const running = detail.State?.Running === true;
+    const running = item.State === 'running';
+    const status = item.Status ?? '';
     const stats = running
       ? await this.get<DockerStats>(`/containers/${id}/stats?stream=false&one-shot=true`).catch(
           () => null
         )
       : null;
-    const startedAt =
-      detail.State?.StartedAt && !detail.State.StartedAt.startsWith('0001')
-        ? detail.State.StartedAt
-        : null;
+    const health = /\((healthy|unhealthy|health: starting)\)/.exec(status)?.[1] ?? null;
+    const exit = /^Exited \((-?\d+)\)/.exec(status);
     return {
       id: id.slice(0, 12),
       name,
       project: item.Labels?.['com.docker.compose.project'] ?? null,
       service: item.Labels?.['com.docker.compose.service'] ?? null,
       image: item.Image,
-      state: detail.State?.Status ?? item.State,
-      health: detail.State?.Health?.Status ?? null,
-      restartCount: detail.RestartCount ?? 0,
-      startedAt,
-      uptimeSeconds:
-        running && startedAt ? Math.round((Date.now() - Date.parse(startedAt)) / 1000) : null,
+      state: item.State,
+      health: health === 'health: starting' ? 'starting' : health,
+      status,
+      uptimeSeconds: running ? parseUptime(status) : null,
       cpuPercent: stats ? this.cpuPercent(id, stats) : null,
       memoryBytes: stats ? memoryUsed(stats) : null,
       memoryLimitBytes: stats?.memory_stats?.limit ?? null,
-      exitCode: running ? null : (detail.State?.ExitCode ?? null),
+      exitCode: exit ? Number(exit[1]) : null,
     };
   }
 
@@ -139,7 +139,7 @@ export class DockerMonitorService {
       const now = {
         running: c.state === 'running',
         healthy: c.health !== 'unhealthy',
-        startedAt: c.startedAt,
+        uptime: c.uptimeSeconds,
       };
       const before = this.known.get(c.name);
       this.known.set(c.name, now);
@@ -155,10 +155,15 @@ export class DockerMonitorService {
         await this.alerts.raise('container_up', 'info', `Container ${c.name} is running again`, {
           container: c.name,
         });
-      } else if (now.running && before.startedAt && now.startedAt !== before.startedAt) {
+      } else if (
+        now.running &&
+        before.uptime !== null &&
+        now.uptime !== null &&
+        now.uptime < before.uptime
+      ) {
+        // Uptime in words only grows while a container runs; a smaller value means it restarted.
         await this.alerts.raise('container_restarted', 'warning', `Container ${c.name} restarted`, {
           container: c.name,
-          restartCount: c.restartCount,
         });
       }
       if (before.healthy && !now.healthy) {
@@ -177,10 +182,31 @@ export class DockerMonitorService {
   private async get<T>(path: string): Promise<T> {
     const res = await fetch(`${this.settings.baseUrl}${path}`, {
       signal: AbortSignal.timeout(TIMEOUT_MS),
+      headers: { 'x-proxy-token': this.settings.token ?? '' },
     });
     if (!res.ok) throw new Error(`Docker API ${res.status} for ${path.split('?')[0]}`);
     return (await res.json()) as T;
   }
+}
+
+const UNIT_SECONDS: Record<string, number> = {
+  second: 1,
+  minute: 60,
+  hour: 3600,
+  day: 86_400,
+  week: 604_800,
+  month: 2_592_000,
+  year: 31_536_000,
+};
+
+/** "Up 2 hours (healthy)", "Up About a minute", "Up Less than a second" → seconds. */
+export function parseUptime(status: string): number | null {
+  const m = /^Up (Less than a|About an?|\d+) (second|minute|hour|day|week|month|year)s?/.exec(
+    status
+  );
+  if (!m) return null;
+  const count = /^\d+$/.test(m[1]!) ? Number(m[1]) : m[1] === 'Less than a' ? 0 : 1;
+  return count * UNIT_SECONDS[m[2]!]!;
 }
 
 /** Memory in use as `docker stats` shows it: usage without the reclaimable file cache. */
@@ -196,18 +222,8 @@ interface DockerListItem {
   Names?: string[];
   Image: string;
   State: string;
+  Status?: string;
   Labels?: Record<string, string>;
-}
-
-interface DockerInspect {
-  RestartCount?: number;
-  State?: {
-    Status?: string;
-    Running?: boolean;
-    StartedAt?: string;
-    ExitCode?: number;
-    Health?: { Status?: string };
-  };
 }
 
 interface DockerStats {

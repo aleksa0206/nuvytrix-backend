@@ -111,7 +111,7 @@ class Container {
     this.auditService = new AuditService(this.auditRepository);
     this.alertsService = new AlertsService(db);
     this.dockerMonitorService = new DockerMonitorService(
-      { baseUrl: overrides.dockerProxyUrl ?? env.DOCKER_PROXY_URL },
+      { baseUrl: overrides.dockerProxyUrl ?? env.DOCKER_PROXY_URL, token: env.DOCKER_PROXY_TOKEN },
       this.alertsService
     );
     this.serverMonitorService = new ServerMonitorService(

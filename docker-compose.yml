@@ -81,13 +81,17 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+      - /etc/nginx/conf.d
+    environment:
+      DOCKER_PROXY_TOKEN: ${DOCKER_PROXY_TOKEN:-}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./deploy/docker-proxy.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/docker-proxy-token.conf.template:/etc/nginx/templates/token.conf.template:ro
     ports:
       - '127.0.0.1:2375:2375'
     healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:2375/_ping']
+      test: ['CMD-SHELL', 'wget -qO- --header "x-proxy-token: $$DOCKER_PROXY_TOKEN" http://127.0.0.1:2375/_ping']
       interval: 30s
       timeout: 5s
       retries: 3
