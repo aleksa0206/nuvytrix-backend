@@ -789,3 +789,29 @@ export function parseUpnpEnabled(page: string): { enabled: boolean } | null {
   if (main === null || !page.includes('function stUpnpPortMapping')) return null;
   return { enabled: main === '1' };
 }
+
+export interface WifiSchedule {
+  /** While on, Wi-Fi is switched off during the periods. */
+  enabled: boolean;
+  periods: { start: string; end: string; days: number[] }[];
+}
+
+/**
+ * WlanSchedule.asp: `var wlanSchecuelEnable = 0|1;` and `stDuration(domain, StartTime, EndTime,
+ * RepeatDay)` for Duration.1–4. Empty periods are left out.
+ */
+export function parseWifiSchedule(page: string): WifiSchedule | null {
+  const enabled = /var wlanSchecuelEnable = (\d+);/.exec(page);
+  if (!enabled) return null;
+  return {
+    enabled: enabled[1] === '1',
+    periods: parseConstructorCalls(page, 'stDuration')
+      .filter((d) => /\.X_HW_WLANShutDownCtrl\.Duration\.\d+$/.test(d[0] ?? '') && d[1])
+      .sort((a, b) => last(a[0]!) - last(b[0]!))
+      .map((d) => ({
+        start: d[1]!,
+        end: d[2] ?? '',
+        days: (d[3] ?? '').split(',').filter(Boolean).map(Number),
+      })),
+  };
+}

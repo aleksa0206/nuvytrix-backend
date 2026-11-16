@@ -22,6 +22,7 @@ import {
 import { portMappingIndexSchema, portMappingSchema } from './routerPortMapping.schema';
 import { dmzSchema, portTriggerSchema, triggerIndexSchema } from './routerForwarding.schema';
 import { wifiCreateSchema, wifiIndexSchema, wifiUpdateSchema } from './routerWifi.schema';
+import { wifiScheduleSchema } from './routerWifiSchedule.service';
 import {
   parentalDeviceParams,
   parentalDeviceSchema,
@@ -1231,6 +1232,45 @@ router.patch(
   asyncHandler(async (req, res) => {
     const result = await container.routerUpnpService.setEnabled(
       req.body.enabled,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/wifi-schedule:
+ *   get:
+ *     summary: Automatic Wi-Fi shutdown periods and whether they are active, read now
+ *     tags: [Router Wi-Fi]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Schedule and whether Nuvytrix may change it }
+ *   put:
+ *     summary: Replace the shutdown periods (at most four) and switch the schedule on or off
+ *     description: >
+ *       While the schedule is on, the router switches Wi-Fi off during each period (wired devices
+ *       are not affected). Read back after saving; audited.
+ *     tags: [Router Wi-Fi]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: New schedule }
+ */
+router.get(
+  '/wifi-schedule',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerWifiScheduleService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getSchedule()) });
+  })
+);
+router.put(
+  '/wifi-schedule',
+  validateBody(wifiScheduleSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerWifiScheduleService.setSchedule(
+      req.body,
       req.admin!.adminId,
       requestContext(req)
     );

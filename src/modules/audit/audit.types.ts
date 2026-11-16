@@ -51,7 +51,8 @@ export type AuditAction =
   | 'router.ddns_created'
   | 'router.ddns_updated'
   | 'router.ddns_deleted'
-  | 'router.upnp_changed';
+  | 'router.upnp_changed'
+  | 'router.wifi_schedule_changed';
 
 export interface AuditEntry {
   adminId: number | null;

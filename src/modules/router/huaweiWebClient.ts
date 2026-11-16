@@ -34,6 +34,7 @@ export const ALLOWED_PAGES = {
   // DDNS: the page lists entries without their passwords (write-only on the router).
   ddns: '/html/bbsp/ddns/ddns.asp',
   upnp: '/html/bbsp/upnp/upnp.asp',
+  wifiSchedule: '/html/amp/wifische/WlanSchedule.asp',
   // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
   wanList: '/html/bbsp/common/wan_list.asp',
 } as const;
@@ -59,6 +60,7 @@ export const WRITABLE_PAGES = {
   dnsHosts: ['add', 'set', 'del'],
   ddns: ['add', 'set', 'del'],
   upnp: ['set'],
+  wifiSchedule: ['set'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;
