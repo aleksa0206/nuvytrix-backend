@@ -158,6 +158,24 @@ describe('HuaweiWebClient', () => {
         fields: {},
       })
     ).rejects.toThrow(/Refusing/);
+    await expect(
+      client().submitForm({
+        page: 'portMapping',
+        action: 'complexajax',
+        object: 'InternetGatewayDevice.X',
+        extraQuery: { ma: 'x&RequestFile=evil' },
+        fields: {},
+      })
+    ).rejects.toThrow(/Refusing/);
+    await expect(
+      client().submitForm({
+        page: 'portMapping',
+        action: 'addcfgajax',
+        objectKey: 'a&b',
+        object: 'InternetGatewayDevice.X',
+        fields: {},
+      })
+    ).rejects.toThrow(/Refusing/);
     expect(router.requests).toHaveLength(0);
   });
 });

@@ -476,3 +476,71 @@ export function parseMacFilter(page: string, kind: 'lan' | 'wifi'): MacFilterSta
       ),
   };
 }
+
+export interface PortMappingRange {
+  /** TR-098 path of the port range (`…PortMapping.N.X_HW_Portlist.M`). */
+  domain: string;
+  protocol: string;
+  /** `start` or `start:end`. */
+  internalPort: string;
+  externalPort: string;
+  /** Source ports on the internet side; empty means any. */
+  externalSourcePort: string;
+}
+
+export interface PortMappingRule {
+  /** TR-098 path, which identifies the mapping on the router. */
+  domain: string;
+  enabled: boolean;
+  name: string;
+  internalHost: string;
+  /** Internet hosts allowed to use the mapping; empty means any. */
+  remoteHostStart: string;
+  remoteHostEnd: string;
+  ranges: PortMappingRange[];
+}
+
+/** portmappingnew.asp: `stPortMap` mappings and their `stPortMappingPortList` port ranges. */
+export function parsePortMappings(page: string): PortMappingRule[] | null {
+  if (!page.includes('function stPortMap(')) return null;
+  const ranges = parseConstructorCalls(page, 'stPortMappingPortList').filter((r) =>
+    /\.X_HW_Portlist\.\d+$/.test(r[0] ?? '')
+  );
+  return parseConstructorCalls(page, 'stPortMap')
+    .filter((m) => /\.PortMapping\.\d+$/.test(m[0] ?? ''))
+    .map((m) => ({
+      domain: m[0]!,
+      enabled: m[1] === '1',
+      remoteHostStart: m[2] ?? '',
+      remoteHostEnd: m[3] ?? '',
+      internalHost: m[5] ?? '',
+      name: m[6] ?? '',
+      ranges: ranges
+        .filter((r) => r[0]!.startsWith(`${m[0]}.X_HW_Portlist.`))
+        .map((r) => ({
+          domain: r[0]!,
+          protocol: r[1] ?? '',
+          internalPort: r[2] ?? '',
+          externalPort: r[3] ?? '',
+          externalSourcePort: r[4] ?? '',
+        })),
+    }));
+}
+
+/**
+ * wan_list.asp: the routed IPv4 WAN connection that carries internet service, which is where the
+ * router's own page creates port mappings. Reads only path, mode and services: the same page holds
+ * WAN account fields that must never be copied.
+ */
+export function parseInternetWan(page: string): string | null {
+  const wan = parseConstructorCalls(page, 'WanIP').find(
+    (w) =>
+      w[12] === 'IP_Routed' &&
+      w[29] === '1' &&
+      (w[25] ?? '').toUpperCase().includes('INTERNET') &&
+      /^InternetGatewayDevice\.WANDevice\.\d+\.WANConnectionDevice\.\d+\.WANIPConnection\.\d+$/.test(
+        w[0] ?? ''
+      )
+  );
+  return wan?.[0] ?? null;
+}

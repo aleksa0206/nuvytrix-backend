@@ -46,7 +46,7 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | Precise device access control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | Device access control (Telnet/HTTP from LAN/Wi-Fi) | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | risk of locking out the web UI |
 | DMZ | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
-| IPv4 port mapping | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
+| IPv4 port mapping: add / edit / delete, on / off | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding | ✅ 2026-11-16 (script) | one port range per mapping is edited here; mappings with several ranges can only be deleted |
 | Port trigger | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | UPnP mappings (live) | ✅ | ✅ (UPnP) | — | ✅ | ✅ | ✅ | |
 | UPnP on/off | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
@@ -71,10 +71,10 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
   helps, and shown in Nuvytrix. Tested against the real router.
 - **Configuration parity:** read access exists for every page. The write mechanism (page-relative
   `add.cgi` / `set.cgi` / `del.cgi` with the page token) is verified on 2026-11-16 for the IPv4
-  filter, DHCP reservations, the main DHCP pool and both MAC filters. Other forms use the same mechanism, but each
+  filter, DHCP reservations, the main DHCP pool, both MAC filters and IPv4 port mapping. Other forms use the same mechanism, but each
   still needs its own verification.
 - Write support will be added feature by feature, each only after its request format has been
-  verified on the router: IPv4 filter, DHCP and MAC filters are done; next port mapping, DMZ, port
+  verified on the router: IPv4 filter, DHCP, MAC filters and port mapping are done; next DMZ, port
   triggering, Wi-Fi and parental controls. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
 - Role-based authorization: Nuvytrix has a single administrator role today. Roles become relevant
   only with more users; writes would be limited to the administrator.

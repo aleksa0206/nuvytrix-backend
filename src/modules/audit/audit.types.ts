@@ -23,7 +23,10 @@ export type AuditAction =
   | 'router.mac_filter_settings_changed'
   | 'router.mac_filter_entry_created'
   | 'router.mac_filter_entry_updated'
-  | 'router.mac_filter_entry_deleted';
+  | 'router.mac_filter_entry_deleted'
+  | 'router.port_mapping_created'
+  | 'router.port_mapping_updated'
+  | 'router.port_mapping_deleted';
 
 export interface AuditEntry {
   adminId: number | null;

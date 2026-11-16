@@ -28,6 +28,8 @@ const PAGES: Record<RouterPage, string> = {
   dhcpStatic: '',
   macFilter: '',
   wifiMacFilter: '',
+  portMapping: '',
+  wanList: '',
 };
 
 class FakeWeb extends HuaweiWebClient {

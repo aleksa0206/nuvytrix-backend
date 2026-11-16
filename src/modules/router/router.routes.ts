@@ -19,6 +19,7 @@ import {
   macFilterListSchema,
   macFilterSettingsSchema,
 } from './routerMacFilter.schema';
+import { portMappingIndexSchema, portMappingSchema } from './routerPortMapping.schema';
 
 const router = Router();
 router.use(requireAuth);
@@ -490,6 +491,105 @@ router.delete(
   asyncHandler(async (req, res) => {
     const result = await container.routerMacFilterService.deleteEntry(
       res.locals.params.list,
+      res.locals.params.index,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/port-mappings:
+ *   get:
+ *     summary: IPv4 port mappings (port forwarding), read from the router now
+ *     tags: [Router port mapping]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Mappings, the internet WAN they are created on, and whether Nuvytrix may change them }
+ *   post:
+ *     summary: Forward external ports on the internet WAN to a LAN device
+ *     description: >
+ *       Refused for the router itself, addresses outside the LAN, a duplicate name, or external
+ *       ports another mapping already uses. Read back after saving. Audited.
+ *     tags: [Router port mapping]
+ *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, enabled, protocol, internalHost, internalPort, externalPortStart, externalPortEnd]
+ *             properties:
+ *               name: { type: string }
+ *               enabled: { type: boolean }
+ *               protocol: { type: string, enum: [TCP, UDP, TCP/UDP] }
+ *               internalHost: { type: string }
+ *               internalPort: { type: integer }
+ *               externalPortStart: { type: integer }
+ *               externalPortEnd: { type: integer }
+ *               remoteHostStart: { type: string }
+ *               remoteHostEnd: { type: string }
+ *     responses:
+ *       201: { description: Mapping as stored on the router }
+ * /router/port-mappings/{index}:
+ *   put:
+ *     summary: Change a mapping (index from PortMapping.{index}); only mappings with one port range
+ *     tags: [Router port mapping]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: Updated mapping }
+ *       404: { description: No such mapping on the router }
+ *   delete:
+ *     summary: Delete a mapping; it is kept in the audit log
+ *     tags: [Router port mapping]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: Remaining mappings }
+ */
+router.get(
+  '/port-mappings',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerPortMappingService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getState()) });
+  })
+);
+router.post(
+  '/port-mappings',
+  validateBody(portMappingSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerPortMappingService.addMapping(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result);
+  })
+);
+router.put(
+  '/port-mappings/:index',
+  validateParams(portMappingIndexSchema),
+  validateBody(portMappingSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerPortMappingService.updateMapping(
+      res.locals.params.index,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result);
+  })
+);
+router.delete(
+  '/port-mappings/:index',
+  validateParams(portMappingIndexSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerPortMappingService.deleteMapping(
       res.locals.params.index,
       req.admin!.adminId,
       requestContext(req)

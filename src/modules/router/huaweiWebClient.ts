@@ -19,6 +19,9 @@ export const ALLOWED_PAGES = {
   dhcpStatic: '/html/bbsp/dhcpstatic/dhcpstatic.asp',
   macFilter: '/html/bbsp/macfilter/macfilter.asp',
   wifiMacFilter: '/html/bbsp/wlanmacfilter/wlanmacfilter.asp',
+  portMapping: '/html/bbsp/portmapping/portmappingnew.asp',
+  // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
+  wanList: '/html/bbsp/common/wan_list.asp',
 } as const;
 
 export type RouterPage = keyof typeof ALLOWED_PAGES;
@@ -33,6 +36,8 @@ export const WRITABLE_PAGES = {
   dhcpStatic: ['add', 'set', 'del'],
   macFilter: ['add', 'set', 'del'],
   wifiMacFilter: ['add', 'set', 'del'],
+  // The page posts mappings with its ajax CGIs; delete is the ordinary del.cgi.
+  portMapping: ['addcfgajax', 'complexajax', 'del'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;
@@ -45,6 +50,8 @@ export interface FormSubmission {
   object?: string;
   /** The URL key the page uses for the object, e.g. `z` on the DHCP server page. Default `x`. */
   objectKey?: string;
+  /** More objects in the URL after the main one, e.g. `ma=<mapping>.X_HW_Portlist.1`. */
+  extraQuery?: Record<string, string>;
   fields: Record<string, string>;
 }
 
@@ -99,8 +106,16 @@ export class HuaweiWebClient {
     ) {
       return Promise.reject(new Error(`Refusing malformed object path ${form.object}`));
     }
-    if (form.objectKey !== undefined && !/^[a-z]$/.test(form.objectKey)) {
-      return Promise.reject(new Error(`Refusing object key ${form.objectKey}`));
+    const keys = [form.objectKey ?? 'x', ...Object.keys(form.extraQuery ?? {})];
+    if (keys.some((key) => !/^[A-Za-z_]{1,16}$/.test(key))) {
+      return Promise.reject(new Error(`Refusing URL keys ${keys.join(',')}`));
+    }
+    // Extra objects are router paths, or a path inside the object being added (GROUP_a_x.…).
+    const badExtra = Object.values(form.extraQuery ?? {}).find(
+      (value) => !/^(InternetGatewayDevice|GROUP_a_x)(\.[A-Za-z0-9_]+)+$/.test(value)
+    );
+    if (badExtra !== undefined) {
+      return Promise.reject(new Error(`Refusing malformed object path ${badExtra}`));
     }
     return this.withSession(async (session) => {
       await session.read(form.page);
@@ -140,6 +155,9 @@ export class HuaweiWebClient {
         // Same URL the page builds: the CGI is relative to the page, RequestFile has no leading slash.
         const query =
           (form.object ? `${form.objectKey ?? 'x'}=${form.object}&` : '') +
+          Object.entries(form.extraQuery ?? {})
+            .map(([key, value]) => `${key}=${value}&`)
+            .join('') +
           `RequestFile=${pagePath.slice(1)}`;
         const response = await this.request(`${directory}${form.action}.cgi?${query}`, {
           method: 'POST',
