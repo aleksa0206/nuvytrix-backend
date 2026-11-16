@@ -28,6 +28,12 @@ function startBackgroundJobs() {
       .catch((err) => logger.error({ err }, 'Server sample failed'));
   void sampleServer();
   setInterval(sampleServer, 60_000).unref();
+
+  if (container.dockerMonitorService.enabled) {
+    const pollDocker = () => container.dockerMonitorService.poll().catch(() => undefined);
+    void pollDocker();
+    setInterval(pollDocker, 60_000).unref();
+  }
   setInterval(() => {
     container.serverMonitorService
       .deleteExpired()

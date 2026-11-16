@@ -91,6 +91,8 @@ const envSchema = z.object({
   MONITORING_INTERVAL_SECONDS: z.coerce.number().int().min(10).default(60),
   MONITORING_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
 
+  // Read-only Docker API proxy (docker-proxy in docker-compose.yml); empty turns container monitoring off.
+  DOCKER_PROXY_URL: z.union([z.literal(''), z.string().url()]).default(''),
   ADGUARD_URL: z.union([z.literal(''), z.string().url()]).default(''),
   ADGUARD_USERNAME: z.string().default(''),
   ADGUARD_PASSWORD: z.string().default(''),

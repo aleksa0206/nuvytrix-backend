@@ -47,6 +47,8 @@ services:
       # not from the LAN. Only that network's addresses may set X-Forwarded-For.
       HOST: 172.31.250.1
       TRUST_PROXY: 172.31.250.0/29
+      # The read-only Docker API proxy below, reachable from the host network only.
+      DOCKER_PROXY_URL: http://127.0.0.1:2375
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,6 +70,27 @@ services:
       - proxy
     depends_on:
       - api
+
+  # Read-only view of the Docker API for the container monitor. The API never gets the socket;
+  # this proxy allows only listing/inspecting containers and their stats (deploy/docker-proxy.conf).
+  docker-proxy:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    # Root inside this container is needed to open the Docker socket (root:docker 0660).
+    user: '0:0'
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./deploy/docker-proxy.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - '127.0.0.1:2375:2375'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:2375/_ping']
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 networks:
   # Dedicated bridge whose gateway (172.31.250.1) is the API's listen address. Change both

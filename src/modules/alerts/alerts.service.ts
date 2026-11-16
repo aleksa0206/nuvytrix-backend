@@ -15,7 +15,11 @@ export type AlertKind =
   | 'server_disk'
   | 'server_memory'
   | 'server_temperature'
-  | 'database_down';
+  | 'database_down'
+  | 'container_down'
+  | 'container_up'
+  | 'container_restarted'
+  | 'container_unhealthy';
 export type AlertSeverity = 'info' | 'warning' | 'error';
 
 interface AlertRow {

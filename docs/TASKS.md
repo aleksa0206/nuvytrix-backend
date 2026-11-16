@@ -68,13 +68,13 @@ Status: ⬜ nije počet · 🟨 u radu · ✅ gotovo · ⛔ čeka odobrenje
 
 ## Faza 5 – Docker
 
-### NVX-10 – Read-only Docker proxy ⬜
+### NVX-10 – Read-only Docker proxy ✅
 **Opis:** docker-socket-proxy sa dozvoljenim samo `GET` za containers i info; bez exec, create, delete i restart; nije izložen van Docker mreže; konfiguracija dokumentovana.
 **Prihvatanje:** Nuvytrix vidi kontejnere; `POST` na proxy vraća 403 (provereno); sajtovi rade bez prekida.
 **Rizik:** nizak (izmena `docker-compose`).
 **Zavisi od:** NVX-01
 
-### NVX-11 – Monitoring kontejnera ⬜
+### NVX-11 – Monitoring kontejnera ✅
 **Opis:** Po kontejneru: stanje, health, broj restarta, poslednji restart, uptime, CPU, RAM. Obaveštenje kad kontejner padne ili se restartuje.
 **Prihvatanje:** svih 6 sajtova i Nuvytrix vidljivi; probni restart test-kontejnera daje obaveštenje.
 **Zavisi od:** NVX-10

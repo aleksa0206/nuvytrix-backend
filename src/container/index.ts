@@ -39,6 +39,7 @@ import { RouterDiagnosticsService } from '../modules/router/routerDiagnostics.se
 import { RouterAccessService } from '../modules/router/routerAccess.service';
 import { RouterIpv6Service } from '../modules/router/routerIpv6.service';
 import { AlertsService } from '../modules/alerts/alerts.service';
+import { DockerMonitorService } from '../modules/docker/dockerMonitor.service';
 import {
   ServerMonitorService,
   type ServerMonitorSettings,
@@ -55,6 +56,7 @@ export interface ContainerOverrides {
   routerDiagnosticsTiming?: { pollMs: number; maxWaitMs: number };
   ownAddresses?: string[];
   serverMonitor?: Partial<ServerMonitorSettings>;
+  dockerProxyUrl?: string;
   upnpClient?: UpnpClient;
 }
 
@@ -63,6 +65,7 @@ class Container {
   public auditService: AuditService;
   public alertsService: AlertsService;
   public serverMonitorService: ServerMonitorService;
+  public dockerMonitorService: DockerMonitorService;
 
   public authRepository: AuthRepository;
   public authService: AuthService;
@@ -107,6 +110,10 @@ class Container {
     this.auditRepository = new AuditRepository(db);
     this.auditService = new AuditService(this.auditRepository);
     this.alertsService = new AlertsService(db);
+    this.dockerMonitorService = new DockerMonitorService(
+      { baseUrl: overrides.dockerProxyUrl ?? env.DOCKER_PROXY_URL },
+      this.alertsService
+    );
     this.serverMonitorService = new ServerMonitorService(
       db,
       {
