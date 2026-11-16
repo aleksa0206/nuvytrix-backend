@@ -60,7 +60,23 @@ off and secures it in a second request; if that fails, it removes the network ag
    Four audit rows, all `applied`, with `password: "[changed]"` and no key anywhere; the networks
    Aleksauros and Aleksauros 5g were unchanged.
 
+## Automatic Wi-Fi shutdown (verified 2026-11-16)
+
+`/html/amp/wifische/WlanSchedule.asp`: `var wlanSchecuelEnable = 0|1;` and `stDuration(domain,
+StartTime, EndTime, RepeatDay)` for `X_HW_WLANShutDownCtrl.Duration.1–4` (the page also contains a
+template call with an unquoted domain, which the parser skips). While the schedule is on, the router
+switches Wi-Fi off during each period (1 = Monday … 7 = Sunday).
+
+The page writes in two steps, which Nuvytrix sends in one session:
+1. `set.cgi?x=…Duration.1&y=…Duration.2&z=…Duration.3&w=…Duration.4` with `x|y|z|w.StartTime`,
+   `.EndTime`, `.RepeatDay` (an unused period: empty times and `1,2,3,4,5,6,7`);
+2. `set.cgi?x=…X_HW_WLANShutDownCtrl` with `x.Enable`.
+
+Verified by script and through the deployed Nuvytrix with the period Sunday 03:00–03:05 (tested on a
+Monday, so Wi-Fi never went off): saved, switched on, switched off and cleared. The UI warns when
+switching on would turn Wi-Fi off at once.
+
 ## Not covered yet
 
-Channel, bandwidth and transmit power (WLAN → Advanced), WPS, schedules, WPA3, per-network device
+Channel, bandwidth and transmit power (WLAN → Advanced), WPS, WPA3, per-network device
 limit and client isolation.
