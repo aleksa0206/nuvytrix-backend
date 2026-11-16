@@ -41,6 +41,7 @@ All routes are under `/api`. Everything except `/health` and `/auth/login` needs
 | Firewall rules | `GET`/`POST /firewall/policies`, `GET`/`PATCH`/`DELETE /firewall/policies/:id`, `POST /firewall/policies/:id/status`, `GET /firewall/policies/:id/instructions` |
 | Monitoring | `GET`/`POST /monitoring/targets`, `PATCH`/`DELETE /monitoring/targets/:id`, `POST /monitoring/targets/:id/check`, `GET /monitoring/targets/:id/series` |
 | DNS | `GET /dns/status`, `GET /dns/stats` |
+| Notifications | `GET /alerts`, `POST /alerts/read-all` |
 | Other | `GET /overview`, `GET /system/capabilities`, `GET /system/settings`, `GET /audit-logs`, `GET /health` |
 
 Swagger UI is at `/api-docs`.
@@ -55,6 +56,7 @@ My setup is a Huawei OptiXstar HN8546X6 router at `192.168.100.1`, an unmanaged 
 | Firewall log | Manual upload of the file downloaded from the router. I haven't confirmed that this firmware can forward it over syslog. |
 | Firewall rules | The router has no documented API, so rules are tracked here and applied by hand with generated steps. Nothing is ever shown as confirmed by the router. |
 | Ping / DNS monitoring | Works, from the server. Uptime is calculated only from checks that actually ran. |
+| Notifications | In the app (Overview, with an unread badge in the menu): internet down after two failed pings of 1.1.1.1 and back, a router or other target not answering, new devices from discovery scans, fiber signal weak (below -27 dBm), back to normal (-25 dBm or better) or lost. Nothing is sent outside the app yet. |
 | DNS stats | Needs AdGuard Home (`ADGUARD_URL`). |
 | Per-device traffic | Not possible with an unmanaged switch. Would need a managed switch with port mirroring or a gateway that exports flow data. |
 | Remote access | CGNAT blocks inbound IPv4. Use a VPN (I use Tailscale). |
