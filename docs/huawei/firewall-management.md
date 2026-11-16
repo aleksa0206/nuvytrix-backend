@@ -106,16 +106,35 @@ Answers:
 - Still open: hybrid-mode `x.Action` values, `set.cgi` edits and mode changes (not yet tested),
   and whether TR-069 provisioning overwrites user rules.
 
-## Safety design for write support (not yet enabled)
+### Verified through Nuvytrix (2026-11-16)
 
-- Disabled by default (`ROUTER_FIREWALL_WRITES=false`); enabling it is a server configuration change.
-- Every write requires an explicit confirmation in the UI and is written to the audit log with the
-  before and after state.
-- **Lockout guard:** a whitelist switch is refused unless the rule set already allows the server and the
-  administrator's address; deny rules that match the router address (192.168.100.1) from the LAN are
-  refused.
-- After every write, the rule list is read back and compared; on mismatch the change is reported as
-  failed, with the exact rule to remove manually.
-- Rollback guidance: the deleted or previous rule is stored in the audit log so it can be recreated.
-  Disabling filtering (`x.IpFilterInRight=0`) is the emergency off switch, from the router UI if
-  Nuvytrix cannot reach it.
+From Router → Firewall & UPnP in the deployed app, against the real router, on unused addresses
+192.168.100.250-251: add (TCP, LAN TCP ports `80,8000:8080`), edit (TCP/UDP, LAN range .250-.251,
+UDP port 53), filtering off and on, delete. Each change was read back from the router and audited
+with outcome `applied`. A rule covering the server address (192.168.100.27) was refused before
+anything was sent. The router ended in its original state (filter on, blacklist, no rules).
+
+Findings:
+- **Direction** is always `Bidirectional` on this firmware; the UI offers no other value. The
+  earlier script attempt with `Direction=Downstream` got no HTTP answer, so Nuvytrix always sends
+  `Bidirectional`.
+- The router stores `Action=Accept` and `Priority=0` on blacklist rules. In blacklist mode every
+  rule blocks, so Nuvytrix shows "block" whatever the stored action is.
+
+## Safety design (implemented)
+
+- Off unless `ROUTER_WRITES_ENABLED=true` on the server; the API answers 403 otherwise.
+- Only blacklist mode is edited. In whitelist or hybrid mode every rule write is refused (422),
+  and switching to those modes is not offered.
+- **Lockout guard:** a rule whose LAN range covers the router address or an address in
+  `ROUTER_PROTECTED_ADDRESSES` (the server, the admin's PC) is refused before anything is sent.
+- Duplicate rules and duplicate names are refused.
+- Every change asks for confirmation in the UI.
+- After each write the page is read back. Success is reported only when the router shows the
+  change; otherwise the API answers 502 `ROUTER_WRITE_NOT_APPLIED`.
+- Every attempt is audited (`router.firewall_*`) with outcome `applied`, `not_applied` or `failed`.
+  Updates and deletes store the previous rule, so it can be recreated from the audit log.
+- Emergency off switch: turn filtering off (from Nuvytrix, or in the router UI under
+  Security → IPv4 Address Filtering if Nuvytrix cannot reach the router).
+- The router allows one web session at a time. Nuvytrix logs in for each operation and logs out
+  right after. While someone is signed in to the router UI, Nuvytrix writes fail with 503.

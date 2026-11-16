@@ -1,6 +1,6 @@
 # Feature parity with the Huawei web interface
 
-Status on 2026-11-15. "Readable" and "Writable" describe what the router supports through its web
+Status on 2026-11-16. "Readable" and "Writable" describe what the router supports through its web
 UI; "Backend"/"Frontend" describe Nuvytrix; "Tested" means verified against the real router.
 
 Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · — not applicable
@@ -36,8 +36,9 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | DHCP static IP | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | good next candidate |
 | DHCPv6 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | |
 | IPv4 filtering: view state and rules | ✅ | ✅ | — | ✅ | ✅ Router → Firewall | ✅ | |
-| IPv4 filtering: add / delete | ✅ | — | ✅ verified | ⏳ | ❌ | ✅ add + delete (protocol ALL) | see firewall-management.md |
-| IPv4 filtering: edit / enable / mode / TCP-UDP rules with ports | ✅ | — | ✅ (documented) | ⏳ | ❌ | ❌ | not yet verified |
+| IPv4 filtering: add / edit / delete rules (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → Firewall | ✅ 2026-11-16: ALL, TCP with ports, TCP/UDP with ports and LAN range | direction is always Bidirectional on this firmware |
+| IPv4 filtering: on / off | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ 2026-11-16 | |
+| IPv4 filtering: whitelist / hybrid mode | ✅ | ✅ | ✅ | ❌ refused | ❌ | ❌ | not built: a whitelist without matching rules cuts every device off; hybrid rule fields not verified |
 | IPv6 filtering | ❌ | — | — | — | — | ✅ (absence verified) | not in this firmware |
 | MAC filtering | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | Wi-Fi MAC filtering | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
