@@ -21,6 +21,12 @@ function startBackgroundJobs() {
   }, env.MONITORING_INTERVAL_SECONDS * 1000).unref();
 
   setInterval(() => {
+    container.alertsService
+      .deleteExpired()
+      .catch((err) => logger.error({ err }, 'Alert cleanup failed'));
+  }, HOURLY_MS).unref();
+
+  setInterval(() => {
     container.monitoringService
       .deleteExpiredResults()
       .catch((err) => logger.error({ err }, 'Monitoring retention cleanup failed'));

@@ -1,3 +1,4 @@
+import type { AlertsService } from '../alerts/alerts.service';
 import { AppError } from '../../common/errors/AppError';
 import { ErrorCode } from '../../common/errors/errorCodes';
 import { logger } from '../../config/logger';
@@ -54,12 +55,17 @@ const POLL_PAGES = [
   'ipFilter',
 ] as const;
 
+type OpticalState = 'unknown' | 'ok' | 'weak' | 'loss';
+const OPTICAL_WEAK_DBM = -27;
+const OPTICAL_OK_DBM = -25;
+
 /**
  * Reads the Huawei router through its web UI (with the administrator's account) and UPnP. Nothing
  * here changes router configuration; writes live in RouterFirewallService. See docs/huawei/.
  */
 export class RouterService {
   private snapshot: RouterSnapshot | null = null;
+  private opticalState: OpticalState = 'unknown';
   private polling: Promise<RouterSnapshot> | null = null;
 
   constructor(
@@ -68,7 +74,8 @@ export class RouterService {
     private routerRepository: RouterRepository,
     private devicesRepository: DevicesRepository,
     private firewallService: FirewallService,
-    private settings: RouterSettings
+    private settings: RouterSettings,
+    private alerts?: AlertsService
   ) {}
 
   get isConfigured(): boolean {
@@ -154,8 +161,44 @@ export class RouterService {
         })
         .catch((err) => logger.error({ err }, 'Could not store router sample'));
     }
+    if (snapshot.optical) await this.checkOptical(snapshot.optical);
     if (errors.length > 0) logger.warn({ errors }, 'Router poll incomplete');
     return snapshot;
+  }
+
+  /**
+   * Alerts when the fiber signal is lost or weak (below -27 dBm, the receiver fails near -28) and
+   * when it recovers (-25 dBm or better, so a value hovering at the limit does not repeat alerts).
+   * ponytail: state in memory; after a restart a still-weak signal is reported once more.
+   */
+  private async checkOptical(optical: OpticalInfo): Promise<void> {
+    if (!this.alerts) return;
+    const rx = optical.rxPowerDbm;
+    const state: OpticalState = optical.lossOfSignal
+      ? 'loss'
+      : rx === null
+        ? this.opticalState
+        : rx < OPTICAL_WEAK_DBM
+          ? 'weak'
+          : rx >= OPTICAL_OK_DBM || this.opticalState === 'ok' || this.opticalState === 'loss'
+            ? 'ok'
+            : this.opticalState;
+    if (state === this.opticalState) return;
+    const previous = this.opticalState;
+    this.opticalState = state;
+    const details = { rxPowerDbm: rx, lossOfSignal: optical.lossOfSignal };
+    if (state === 'loss') {
+      await this.alerts.raise('optical_loss', 'error', 'Fiber signal lost', details);
+    } else if (state === 'weak') {
+      await this.alerts.raise('optical_weak', 'warning', `Weak fiber signal: ${rx} dBm`, details);
+    } else if (state === 'ok' && previous !== 'unknown') {
+      await this.alerts.raise(
+        'optical_ok',
+        'info',
+        `Fiber signal back to normal: ${rx} dBm`,
+        details
+      );
+    }
   }
 
   /** Replaces the IPv4 filter in the last reading after Nuvytrix changed it on the router. */

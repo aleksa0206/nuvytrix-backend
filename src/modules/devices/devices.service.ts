@@ -1,3 +1,4 @@
+import type { AlertsService } from '../alerts/alerts.service';
 import { AppError, ConflictError, NotFoundError } from '../../common/errors/AppError';
 import { ErrorCode } from '../../common/errors/errorCodes';
 import { isTargetAllowed, parseCidr } from '../../common/utils/ipv4';
@@ -31,7 +32,8 @@ export class DevicesService {
     private devicesRepository: DevicesRepository,
     private discoverer: HostDiscoverer,
     private auditService: AuditService,
-    private settings: DiscoverySettings
+    private settings: DiscoverySettings,
+    private alerts?: AlertsService
   ) {}
 
   /** Normalizes a target to network/prefix form and rejects anything outside the allowed networks. */
@@ -80,8 +82,17 @@ export class DevicesService {
     const startedAt = Date.now();
     try {
       const hosts = await this.discoverer.discover(scan.target);
-      const newDevices = await this.devicesRepository.recordScanResults(scan.id, hosts);
+      const created = await this.devicesRepository.recordScanResults(scan.id, hosts);
+      const newDevices = created.length;
       await this.devicesRepository.completeScan(scan.id, hosts.length, newDevices);
+      for (const host of created) {
+        await this.alerts?.raise(
+          'new_device',
+          'warning',
+          `New device on the network: ${host.hostname ?? host.vendor ?? host.ipAddress}`,
+          { ...host }
+        );
+      }
       logger.info(
         {
           scanId: scan.id,

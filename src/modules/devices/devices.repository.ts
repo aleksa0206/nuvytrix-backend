@@ -64,10 +64,10 @@ export class DevicesRepository {
     return { rows, total: countRow?.count ?? 0 };
   }
 
-  /** Records every host from one scan atomically; returns how many devices were seen for the first time. */
-  async recordScanResults(scanId: number, hosts: DiscoveredHost[]): Promise<number> {
+  /** Records every host from one scan atomically; returns the hosts seen for the first time. */
+  async recordScanResults(scanId: number, hosts: DiscoveredHost[]): Promise<DiscoveredHost[]> {
     return this.db.transaction(async (trx) => {
-      let newDevices = 0;
+      const newDevices: DiscoveredHost[] = [];
       for (const host of hosts) {
         const existing = await (host.macAddress
           ? trx<DeviceRow>('devices').where({ mac_address: host.macAddress }).first()
@@ -90,7 +90,7 @@ export class DevicesRepository {
               updated_at: trx.fn.now(),
             });
         } else {
-          newDevices++;
+          newDevices.push(host);
           const [created] = await trx('devices')
             .insert({
               mac_address: host.macAddress,

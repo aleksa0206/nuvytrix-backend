@@ -3,11 +3,17 @@ import { AppError, NotFoundError } from '../../common/errors/AppError';
 import { ErrorCode } from '../../common/errors/errorCodes';
 import { logger } from '../../config/logger';
 import type { RequestContext } from '../auth/auth.types';
+import type { AlertsService } from '../alerts/alerts.service';
 import type { AuditService } from '../audit/audit.service';
 import type { MonitoringRepository, TargetFields, TargetRow } from './monitoring.repository';
 import type { Prober, ProbeResult } from './probes';
 
 export const ROUTER_TARGET_KEY = 'router';
+export const INTERNET_TARGET_KEY = 'internet';
+/** Cloudflare's resolver answers ping reliably; if it fails while the router answers, the internet is down. */
+const INTERNET_HOST = '1.1.1.1';
+/** Consecutive failed checks before a target counts as down (one lost check is not an outage). */
+const DOWN_AFTER_FAILURES = 2;
 const UPTIME_WINDOW_HOURS = 24;
 const MAX_SERIES_POINTS = 300;
 
@@ -26,18 +32,30 @@ export interface TargetInput {
 
 export class MonitoringService {
   private checkInProgress = false;
+  /**
+   * Consecutive failures per target, and which targets were reported down.
+   * ponytail: in memory, so a restart during an outage reports it again but not its end; store
+   * the state if that matters.
+   */
+  private failures = new Map<number, number>();
+  private reportedDown = new Set<number>();
 
   constructor(
     private monitoringRepository: MonitoringRepository,
     private prober: Prober,
     private auditService: AuditService,
-    private settings: MonitoringSettings
+    private settings: MonitoringSettings,
+    private alerts?: AlertsService
   ) {}
 
-  /** Keeps the router target in line with ROUTER_HOST; removing the variable disables it. */
+  /** Keeps the built-in targets in line: the router (ROUTER_HOST, disabled without it) and the internet. */
   async syncManagedTargets(): Promise<void> {
-    const existing = await this.monitoringRepository.findTargetByManagedKey(ROUTER_TARGET_KEY);
-    const host = this.settings.routerHost;
+    await this.syncManagedTarget(ROUTER_TARGET_KEY, 'Router', this.settings.routerHost);
+    await this.syncManagedTarget(INTERNET_TARGET_KEY, 'Internet', INTERNET_HOST);
+  }
+
+  private async syncManagedTarget(key: string, name: string, host: string): Promise<void> {
+    const existing = await this.monitoringRepository.findTargetByManagedKey(key);
     if (!host) {
       if (existing?.enabled) {
         await this.monitoringRepository.updateTarget(existing.id, { enabled: false });
@@ -46,8 +64,8 @@ export class MonitoringService {
     }
     if (!existing) {
       await this.monitoringRepository.createTarget(
-        { name: 'Router', kind: 'icmp', host, dns_query_name: null, enabled: true },
-        ROUTER_TARGET_KEY
+        { name, kind: 'icmp', host, dns_query_name: null, enabled: true },
+        key
       );
     } else if (existing.host !== host || !existing.enabled) {
       await this.monitoringRepository.updateTarget(existing.id, { host, enabled: true });
@@ -82,7 +100,37 @@ export class MonitoringService {
     if (!result.success) {
       logger.warn({ target: target.name, host: target.host, error: result.error }, 'Check failed');
     }
+    await this.trackOutage(target, result);
     return result;
+  }
+
+  /** Raises one alert when a target goes down (after repeated failures) and one when it is back. */
+  private async trackOutage(target: TargetRow, result: ProbeResult): Promise<void> {
+    if (!this.alerts) return;
+    const subject = target.managed_key === INTERNET_TARGET_KEY ? 'Internet' : target.name;
+    if (result.success) {
+      this.failures.delete(target.id);
+      if (this.reportedDown.delete(target.id)) {
+        await this.alerts.raise('target_up', 'info', `${subject} is back`, {
+          targetId: target.id,
+          host: target.host,
+        });
+      }
+      return;
+    }
+    const failures = (this.failures.get(target.id) ?? 0) + 1;
+    this.failures.set(target.id, failures);
+    if (failures === DOWN_AFTER_FAILURES && !this.reportedDown.has(target.id)) {
+      this.reportedDown.add(target.id);
+      await this.alerts.raise(
+        'target_down',
+        'error',
+        target.managed_key === INTERNET_TARGET_KEY
+          ? 'Internet is down'
+          : `${target.name} is not answering`,
+        { targetId: target.id, host: target.host, error: result.error }
+      );
+    }
   }
 
   async listTargets() {
@@ -246,6 +294,7 @@ function toTargetDto(row: TargetRow) {
     dnsQueryName: row.dns_query_name,
     enabled: row.enabled,
     managed: row.managed_key !== null,
+    managedKey: row.managed_key,
   };
 }
 

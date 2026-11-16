@@ -1,4 +1,5 @@
 import type { Knex } from 'knex';
+import type { AlertsService } from '../alerts/alerts.service';
 import type { DevicesService } from '../devices/devices.service';
 import type { DnsService } from '../dns/dns.service';
 import type { FirewallService } from '../firewall/firewall.service';
@@ -30,23 +31,26 @@ export class OverviewService {
     private policiesService: PoliciesService,
     private monitoringService: MonitoringService,
     private dnsService: DnsService,
-    private settings: OverviewSettings
+    private settings: OverviewSettings,
+    private alerts?: AlertsService
   ) {}
 
   async getOverview() {
-    const [database, devices, firewall, insights, targets, dns, policies] = await Promise.all([
-      this.checkDatabase(),
-      this.devicesService.getSummary(),
-      this.firewallService.getSummary(),
-      this.firewallService.getInsights(),
-      this.monitoringService.listTargets(),
-      this.dnsService.getStatus(),
-      this.policiesService.countByStatus(),
-    ]);
+    const [database, devices, firewall, insights, targets, dns, policies, unreadAlerts] =
+      await Promise.all([
+        this.checkDatabase(),
+        this.devicesService.getSummary(),
+        this.firewallService.getSummary(),
+        this.firewallService.getInsights(),
+        this.monitoringService.listTargets(),
+        this.dnsService.getStatus(),
+        this.policiesService.countByStatus(),
+        this.alerts?.unreadCount() ?? Promise.resolve(0),
+      ]);
 
     const enabledTargets = targets.filter((target) => target.enabled);
     const failingTargets = enabledTargets.filter((target) => target.status === 'down');
-    const routerTarget = targets.find((target) => target.managed);
+    const routerTarget = targets.find((target) => target.managedKey === ROUTER_TARGET_KEY);
 
     const scanAgeHours = devices.latestScan
       ? (Date.now() - new Date(devices.latestScan.startedAt).getTime()) / 3_600_000
@@ -116,6 +120,7 @@ export class OverviewService {
         provider: dns.provider,
       },
       policies: { pendingManual: policies.pending_manual ?? 0, failed: policies.apply_failed ?? 0 },
+      alerts: { unread: unreadAlerts },
     };
   }
 

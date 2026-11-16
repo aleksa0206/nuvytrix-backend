@@ -36,6 +36,7 @@ import { RouterLedService } from '../modules/router/routerLed.service';
 import { RouterDiagnosticsService } from '../modules/router/routerDiagnostics.service';
 import { RouterAccessService } from '../modules/router/routerAccess.service';
 import { RouterIpv6Service } from '../modules/router/routerIpv6.service';
+import { AlertsService } from '../modules/alerts/alerts.service';
 import { RouterWriter } from '../modules/router/routerWriter';
 import { HUAWEI_UPNP_DEFAULTS, UpnpClient } from '../modules/router/upnpClient';
 
@@ -52,6 +53,7 @@ export interface ContainerOverrides {
 class Container {
   public auditRepository: AuditRepository;
   public auditService: AuditService;
+  public alertsService: AlertsService;
 
   public authRepository: AuthRepository;
   public authService: AuthService;
@@ -93,6 +95,7 @@ class Container {
   constructor(overrides: ContainerOverrides = {}) {
     this.auditRepository = new AuditRepository(db);
     this.auditService = new AuditService(this.auditRepository);
+    this.alertsService = new AlertsService(db);
 
     this.authRepository = new AuthRepository(db);
     this.authService = new AuthService(this.authRepository, this.auditService, {
@@ -113,7 +116,8 @@ class Container {
       {
         allowedCidrs: env.ALLOWED_SCAN_CIDRS,
         onlineWindowMinutes: env.DEVICE_ONLINE_WINDOW_MINUTES,
-      }
+      },
+      this.alertsService
     );
 
     this.firewallRepository = new FirewallRepository(db);
@@ -133,7 +137,8 @@ class Container {
       this.monitoringRepository,
       overrides.prober ?? new SystemProber(env.PING_PATH),
       this.auditService,
-      { routerHost: env.ROUTER_HOST, retentionDays: env.MONITORING_RETENTION_DAYS }
+      { routerHost: env.ROUTER_HOST, retentionDays: env.MONITORING_RETENTION_DAYS },
+      this.alertsService
     );
 
     this.dnsService = new DnsService(
@@ -168,7 +173,8 @@ class Container {
         host: env.ROUTER_HOST,
         pollSeconds: env.ROUTER_POLL_SECONDS,
         retentionDays: env.MONITORING_RETENTION_DAYS,
-      }
+      },
+      this.alertsService
     );
     const routerWriter = new RouterWriter(routerWebClient, this.auditService, {
       writesEnabled: overrides.routerWritesEnabled ?? env.ROUTER_WRITES_ENABLED,
@@ -218,7 +224,8 @@ class Container {
         discoveryIntervalMinutes: env.DISCOVERY_INTERVAL_MINUTES,
         monitoringIntervalSeconds: env.MONITORING_INTERVAL_SECONDS,
         allowedScanCidrs: env.ALLOWED_SCAN_CIDRS,
-      }
+      },
+      this.alertsService
     );
   }
 }
