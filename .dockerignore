@@ -5,3 +5,6 @@ coverage
 .env.*
 .git
 tests
+
+# Deployment files and AdGuard state (root-owned on the server), not part of the image
+deploy/
