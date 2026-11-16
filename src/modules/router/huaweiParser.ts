@@ -544,3 +544,47 @@ export function parseInternetWan(page: string): string | null {
   );
   return wan?.[0] ?? null;
 }
+
+export interface DmzState {
+  /** TR-098 path (`<WAN>.X_HW_DMZ`). */
+  domain: string;
+  enabled: boolean;
+  host: string;
+}
+
+/** dmz.asp: `stDMZInfo(domain, DMZEnable, DMZHostIPAddress)`, one per WAN that has a DMZ host. */
+export function parseDmz(page: string): DmzState[] | null {
+  if (!page.includes('function stDMZInfo')) return null;
+  return parseConstructorCalls(page, 'stDMZInfo')
+    .filter((d) => /\.X_HW_DMZ$/.test(d[0] ?? ''))
+    .map((d) => ({ domain: d[0]!, enabled: d[1] === '1', host: d[2] ?? '' }));
+}
+
+export interface PortTriggerRule {
+  /** TR-098 path (`<WAN>.X_HW_PortTrigger.N`). */
+  domain: string;
+  enabled: boolean;
+  triggerPortStart: number;
+  triggerPortEnd: number;
+  triggerProtocol: string;
+  openPortStart: number;
+  openPortEnd: number;
+  openProtocol: string;
+}
+
+/** porttrigger.asp: `stPortTrigger(domain, Enable, TPort, TPortEnd, TProto, OPort, OPortEnd, OProto)`. */
+export function parsePortTriggers(page: string): PortTriggerRule[] | null {
+  if (!page.includes('function stPortTrigger')) return null;
+  return parseConstructorCalls(page, 'stPortTrigger')
+    .filter((t) => /\.X_HW_PortTrigger\.\d+$/.test(t[0] ?? ''))
+    .map((t) => ({
+      domain: t[0]!,
+      enabled: t[1] === '1',
+      triggerPortStart: Number(t[2]),
+      triggerPortEnd: Number(t[3]),
+      triggerProtocol: t[4] ?? '',
+      openPortStart: Number(t[5]),
+      openPortEnd: Number(t[6]),
+      openProtocol: t[7] ?? '',
+    }));
+}

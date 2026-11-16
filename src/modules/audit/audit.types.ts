@@ -26,7 +26,12 @@ export type AuditAction =
   | 'router.mac_filter_entry_deleted'
   | 'router.port_mapping_created'
   | 'router.port_mapping_updated'
-  | 'router.port_mapping_deleted';
+  | 'router.port_mapping_deleted'
+  | 'router.dmz_changed'
+  | 'router.dmz_deleted'
+  | 'router.port_trigger_created'
+  | 'router.port_trigger_updated'
+  | 'router.port_trigger_deleted';
 
 export interface AuditEntry {
   adminId: number | null;

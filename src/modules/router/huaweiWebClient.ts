@@ -20,6 +20,8 @@ export const ALLOWED_PAGES = {
   macFilter: '/html/bbsp/macfilter/macfilter.asp',
   wifiMacFilter: '/html/bbsp/wlanmacfilter/wlanmacfilter.asp',
   portMapping: '/html/bbsp/portmapping/portmappingnew.asp',
+  dmz: '/html/bbsp/dmz/dmz.asp',
+  portTrigger: '/html/bbsp/porttrigger/porttrigger.asp',
   // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
   wanList: '/html/bbsp/common/wan_list.asp',
 } as const;
@@ -38,6 +40,8 @@ export const WRITABLE_PAGES = {
   wifiMacFilter: ['add', 'set', 'del'],
   // The page posts mappings with its ajax CGIs; delete is the ordinary del.cgi.
   portMapping: ['addcfgajax', 'complexajax', 'del'],
+  dmz: ['add', 'set', 'del'],
+  portTrigger: ['add', 'set', 'del'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;

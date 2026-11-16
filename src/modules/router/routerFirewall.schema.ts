@@ -81,3 +81,15 @@ export type IpFilterSettingsInput = z.infer<typeof ipFilterSettingsSchema>;
 export function ipToInt(ip: string): number {
   return toInt(ip);
 }
+
+/** Why `ip` cannot be a device in the LAN `lanIp`/`mask`, or null when it can. */
+export function lanHostProblem(ip: string, lanIp: string, mask: string): string | null {
+  const m = toInt(mask);
+  const value = toInt(ip);
+  const host = (value & ~m) >>> 0;
+  if ((value & m) >>> 0 !== (toInt(lanIp) & m) >>> 0)
+    return `${ip} is not in the LAN ${lanIp}/${mask}`;
+  if (host === 0 || host === ~m >>> 0) return `${ip} is the network or broadcast address`;
+  if (ip === lanIp) return `${ip} is the router itself`;
+  return null;
+}

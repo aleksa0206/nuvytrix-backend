@@ -45,9 +45,9 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | Parental control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | several pages, templates and schedules |
 | Precise device access control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | Device access control (Telnet/HTTP from LAN/Wi-Fi) | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | risk of locking out the web UI |
-| DMZ | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
+| DMZ: set host, on / off, remove | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding & DMZ | ✅ 2026-11-16 (script) | server and admin PC cannot be the DMZ host |
 | IPv4 port mapping: add / edit / delete, on / off | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding | ✅ 2026-11-16: script, then through Nuvytrix (router as target refused; add off, edit to UDP range, on, off, delete) | one port range per mapping is edited here; mappings with several ranges can only be deleted |
-| Port trigger | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
+| Port trigger: add / edit / delete | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding & DMZ | ✅ 2026-11-16 (script) | |
 | UPnP mappings (live) | ✅ | ✅ (UPnP) | — | ✅ | ✅ | ✅ | |
 | UPnP on/off | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | USB / FTP, media sharing | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | no USB device in use |
@@ -71,10 +71,10 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
   helps, and shown in Nuvytrix. Tested against the real router.
 - **Configuration parity:** read access exists for every page. The write mechanism (page-relative
   `add.cgi` / `set.cgi` / `del.cgi` with the page token) is verified on 2026-11-16 for the IPv4
-  filter, DHCP reservations, the main DHCP pool, both MAC filters and IPv4 port mapping. Other forms use the same mechanism, but each
+  filter, DHCP reservations, the main DHCP pool, both MAC filters, IPv4 port mapping, DMZ and port triggers. Other forms use the same mechanism, but each
   still needs its own verification.
 - Write support will be added feature by feature, each only after its request format has been
-  verified on the router: IPv4 filter, DHCP, MAC filters and port mapping are done; next DMZ, port
-  triggering, Wi-Fi and parental controls. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
+  verified on the router: IPv4 filter, DHCP, MAC filters, port mapping, DMZ and port triggers are
+  done; next Wi-Fi, parental controls, DNS and UPnP. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
 - Role-based authorization: Nuvytrix has a single administrator role today. Roles become relevant
   only with more users; writes would be limited to the administrator.

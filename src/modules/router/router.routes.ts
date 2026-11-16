@@ -20,6 +20,7 @@ import {
   macFilterSettingsSchema,
 } from './routerMacFilter.schema';
 import { portMappingIndexSchema, portMappingSchema } from './routerPortMapping.schema';
+import { dmzSchema, portTriggerSchema, triggerIndexSchema } from './routerForwarding.schema';
 
 const router = Router();
 router.use(requireAuth);
@@ -590,6 +591,158 @@ router.delete(
   validateParams(portMappingIndexSchema),
   asyncHandler(async (req, res) => {
     const result = await container.routerPortMappingService.deleteMapping(
+      res.locals.params.index,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/dmz:
+ *   get:
+ *     summary: DMZ host on the internet WAN, read from the router now (null when none)
+ *     tags: [Router DMZ and port trigger]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: DMZ state and whether Nuvytrix may change it }
+ *   put:
+ *     summary: Set the DMZ host and turn it on or off
+ *     description: >
+ *       A DMZ host receives every unsolicited connection from the internet. Refused for the router,
+ *       addresses outside the LAN, and protected addresses (server, admin PC). Read back; audited.
+ *     tags: [Router DMZ and port trigger]
+ *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [enabled, host]
+ *             properties:
+ *               enabled: { type: boolean }
+ *               host: { type: string }
+ *     responses:
+ *       200: { description: New DMZ state }
+ *       422: { description: Refused }
+ *   delete:
+ *     summary: Remove the DMZ entry; it is kept in the audit log
+ *     tags: [Router DMZ and port trigger]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Removed }
+ *       404: { description: No DMZ entry on the router }
+ * /router/port-triggers:
+ *   get:
+ *     summary: Port triggers on the internet WAN, read from the router now
+ *     tags: [Router DMZ and port trigger]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Triggers and whether Nuvytrix may change them }
+ *   post:
+ *     summary: Add a port trigger
+ *     description: Ranges may not overlap another trigger; the router allows 256 ports per side in total.
+ *     tags: [Router DMZ and port trigger]
+ *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               enabled: { type: boolean }
+ *               triggerProtocol: { type: string, enum: [TCP, UDP, TCP/UDP] }
+ *               triggerPortStart: { type: integer }
+ *               triggerPortEnd: { type: integer }
+ *               openProtocol: { type: string, enum: [TCP, UDP, TCP/UDP] }
+ *               openPortStart: { type: integer }
+ *               openPortEnd: { type: integer }
+ *     responses:
+ *       201: { description: Trigger as stored on the router }
+ * /router/port-triggers/{index}:
+ *   put:
+ *     summary: Change a port trigger (index from X_HW_PortTrigger.{index})
+ *     tags: [Router DMZ and port trigger]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: Updated trigger }
+ *   delete:
+ *     summary: Delete a port trigger; it is kept in the audit log
+ *     tags: [Router DMZ and port trigger]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: Remaining triggers }
+ */
+router.get(
+  '/dmz',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerForwardingService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getDmz()) });
+  })
+);
+router.put(
+  '/dmz',
+  validateBody(dmzSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerForwardingService.setDmz(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.dmz);
+  })
+);
+router.delete(
+  '/dmz',
+  asyncHandler(async (req, res) => {
+    await container.routerForwardingService.deleteDmz(req.admin!.adminId, requestContext(req));
+    res.status(204).end();
+  })
+);
+router.get(
+  '/port-triggers',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerForwardingService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getTriggers()) });
+  })
+);
+router.post(
+  '/port-triggers',
+  validateBody(portTriggerSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerForwardingService.addTrigger(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result);
+  })
+);
+router.put(
+  '/port-triggers/:index',
+  validateParams(triggerIndexSchema),
+  validateBody(portTriggerSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerForwardingService.updateTrigger(
+      res.locals.params.index,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result);
+  })
+);
+router.delete(
+  '/port-triggers/:index',
+  validateParams(triggerIndexSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerForwardingService.deleteTrigger(
       res.locals.params.index,
       req.admin!.adminId,
       requestContext(req)
