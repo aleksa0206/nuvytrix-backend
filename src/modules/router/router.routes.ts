@@ -24,6 +24,7 @@ import { dmzSchema, portTriggerSchema, triggerIndexSchema } from './routerForwar
 import { wifiCreateSchema, wifiIndexSchema, wifiUpdateSchema } from './routerWifi.schema';
 import { wifiScheduleSchema } from './routerWifiSchedule.service';
 import { CHANNELS, POWER_LEVELS, wifiRadioSchema } from './routerWifiRadio.service';
+import { ledSchema } from './routerLed.service';
 import {
   parentalDeviceParams,
   parentalDeviceSchema,
@@ -1318,6 +1319,42 @@ router.put(
       requestContext(req)
     );
     res.json(result.radio);
+  })
+);
+
+/**
+ * @swagger
+ * /router/led:
+ *   get:
+ *     summary: The router's indicator lights mode (on, off, offAfterDelay), read now
+ *     tags: [Router maintenance]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: LED mode and whether Nuvytrix may change it }
+ *   put:
+ *     summary: Set the indicator lights mode
+ *     tags: [Router maintenance]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: New mode }
+ */
+router.get(
+  '/led',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerLedService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getState()) });
+  })
+);
+router.put(
+  '/led',
+  validateBody(ledSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerLedService.setMode(
+      req.body.mode,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
   })
 );
 
