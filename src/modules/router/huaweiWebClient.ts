@@ -44,6 +44,8 @@ export const ALLOWED_PAGES = {
   traceResult: '/html/bbsp/maintenance/GetRouteResult.asp',
   userLog: '/html/ssmp/userlog/normallogview.asp',
   deviceAccess: '/html/bbsp/acl/aclsmart.asp',
+  // IPv6 LAN settings; read only.
+  ipv6Lan: '/html/bbsp/lanaddress/lanaddress.asp',
   // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
   wanList: '/html/bbsp/common/wan_list.asp',
 } as const;

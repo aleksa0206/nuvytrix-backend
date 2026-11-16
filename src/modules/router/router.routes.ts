@@ -1471,4 +1471,21 @@ router.put(
   })
 );
 
+/**
+ * @swagger
+ * /router/ipv6:
+ *   get:
+ *     summary: IPv6 on the LAN (prefix, router advertisements, DHCPv6 server, DNS), read only
+ *     tags: [Router network]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: "{ prefix, routerAdvertisement, dhcpv6Server, dns }" }
+ */
+router.get(
+  '/ipv6',
+  asyncHandler(async (_req, res) => {
+    res.json(await container.routerIpv6Service.getState());
+  })
+);
+
 export default router;

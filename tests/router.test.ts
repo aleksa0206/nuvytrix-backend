@@ -47,6 +47,7 @@ const PAGES: Record<RouterPage, string> = {
   traceResult: '',
   userLog: '',
   deviceAccess: '',
+  ipv6Lan: '',
 };
 
 class FakeWeb extends HuaweiWebClient {

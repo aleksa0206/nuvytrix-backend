@@ -34,7 +34,7 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | LAN host (address, mask) | ✅ | ✅ | ✅ | ⚠️ read in parser | ❌ | ❌ | changing it disconnects every device |
 | DHCP server: pool range and lease time | ✅ | ✅ | ✅ | ✅ | ✅ Router → DHCP | ✅ 2026-11-16: lease 86400 → 43200 → 86400 (script), then through Nuvytrix (add, edit, refused pool, lease 12 h and back, delete; 5 audit rows) | turning the DHCP server off, the secondary pool, DHCP options and DNS handed out are not offered yet |
 | DHCP static IP (reservations): add / edit / delete | ✅ | ✅ | ✅ | ✅ | ✅ Router → DHCP | ✅ 2026-11-16: add, change address, delete (script), then through Nuvytrix (add, edit, refused pool, lease 12 h and back, delete; 5 audit rows) | an address held by another device is refused |
-| DHCPv6 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | |
+| IPv6 LAN: prefix, router advertisements, DHCPv6 server, DNS | ✅ | ✅ | ✅ | ✅ read only | ✅ Router → DHCP & DNS | ✅ 2026-11-16: read from the router | writes not offered: one form for the whole IPv6 LAN, a mistake cuts IPv6; see ipv6.md |
 | IPv4 filtering: view state and rules | ✅ | ✅ | — | ✅ | ✅ Router → Firewall | ✅ | |
 | IPv4 filtering: add / edit / delete rules (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → Firewall | ✅ 2026-11-16: ALL, TCP with ports, TCP/UDP with ports and LAN range | direction is always Bidirectional on this firmware |
 | IPv4 filtering: on / off | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ 2026-11-16 | |
