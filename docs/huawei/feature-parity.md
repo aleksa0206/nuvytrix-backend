@@ -57,7 +57,7 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | Wi-Fi networks: name, on / off, name broadcast, WPA2 or WPA/WPA2 key; add / remove extra networks | ✅ | ✅ | ✅ | ✅ | ✅ Router → Wi-Fi | ✅ 2026-11-16: script, then through Nuvytrix with a temporary network | the page holds keys: compared, never returned or logged; open/WEP never set; main networks cannot be removed |
 | Wi-Fi automatic shutdown schedule | ✅ | ✅ | ✅ | ✅ | ✅ Router → Wi-Fi | ✅ 2026-11-16: script, then through Nuvytrix (period that could not hit) | four periods |
 | Wi-Fi radio: channel (auto / manual) and transmit power | ✅ | ✅ | ✅ | ✅ | ✅ Router → Wi-Fi | ✅ 2026-11-16: script, then through Nuvytrix on 2.4 GHz | 5 GHz manual channels 36–48 only; width not offered; a change restarts that radio |
-| Wi-Fi channel width, WPS, coverage (mesh) | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | |
+| Wi-Fi channel width and WPS on / off per band | ✅ | ✅ | ✅ | ✅ | ✅ Router → Wi-Fi radios | ✅ 2026-11-16: through Nuvytrix (2.4 GHz width 20 MHz and back; WPS off and on) | WPS PIN never read; fixed 80 and 80+80 MHz not offered; coverage (mesh) not built |
 | Account management | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | not planned: changing the router password from another app is a lockout risk |
 | ONT authentication | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | not planned: ISP registration data |
 | Configuration file backup | ✅ (provider account) | ❌ for this account | — | ❌ | ❌ | ✅ absence verified 2026-11-16 | cfgfileroot.asp offers only "save" and "save and reboot" to the admin account; no download |

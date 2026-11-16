@@ -85,14 +85,35 @@ The current values are read from `stWlanWifi(domain, name, enable, ssid, mode, c
 AutoChannelEnable, channelWidth)` on WlanBasic.asp.
 
 Offered channels: 2.4 GHz 1–13 (country RS); 5 GHz only 36–48, because DFS channels can switch the
-radio off while it checks for radar. Channel width and standard are not changed (their value codes
-were not confirmed).
+radio off while it checks for radar. The standard is not changed.
 
 Verified by script (2.4 GHz power 100 → 80 → 100) and through the deployed Nuvytrix (2.4 GHz channel
 6 at 80 %, then automatic at 100 %). Each change restarts that radio briefly; wired devices are not
 affected.
 
+## Channel width (verified 2026-11-16)
+
+Sent with the radio settings as `y.X_HW_HT20`. Codes from `initChannelWidthList` /
+`X_HW_StandardChange` in `wlanadvance_api.asp`: `0` auto 20/40 MHz, `1` 20 MHz, `2` 40 MHz, `3` auto
+20/40/80 MHz, `4` 160 MHz (`5` 80+80 and `6` fixed 80 are not offered on this model). The page offers
+20 MHz only for legacy standards (11a/b/g/bg), 0–2 on 2.4 GHz, and 3 and 4 on 5 GHz in 11ac/11ax
+(160 MHz in 11ax). Nuvytrix offers the same and reads the value back from `stWlanWifi(…, channelWidth)`.
+The router was found at auto 20/40 (2.4 GHz) and 160 MHz (5 GHz). Note: 160 MHz on 5 GHz uses DFS
+channels anyway.
+
+Verified through the deployed Nuvytrix: 2.4 GHz auto 20/40 → 20 MHz → auto 20/40, channel and power
+unchanged.
+
+## WPS (verified 2026-11-16)
+
+WlanBasic.asp: `stWpsPin(domain, X_HW_ConfigMethod, DevicePassword, X_HW_PinGenerator, Enable)` for
+`WLANConfiguration.1.WPS` and `.5.WPS` (the main network of each band; push button mode). Nuvytrix
+reads only the domain and `Enable`; the PIN (`DevicePassword`) is never read, returned or logged.
+Switched with `set.cgi?z=<network>.WPS&RequestFile=html/amp/wlanbasic/WlanBasic.asp` and only
+`z.Enable` (method and PIN stay as they are). Connected devices are not affected.
+
+Verified through the deployed Nuvytrix: 2.4 GHz WPS off, then on again (it was on when found).
+
 ## Not covered yet
 
-Channel width, WPS, WPA3, per-network device
-limit and client isolation.
+WPA3, per-network device limit and client isolation.
