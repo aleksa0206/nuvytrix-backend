@@ -28,6 +28,9 @@ export const ALLOWED_PAGES = {
   // Parental control: the forms live on the MAC page, the data in parentalctrlinfo.asp.
   parental: '/html/bbsp/parentalctrl/parentalctrlmac.asp',
   parentalInfo: '/html/bbsp/common/parentalctrlinfo.asp',
+  // Static DNS: the form on dnshosts.asp, the data in dnshostslist.asp.
+  dnsHosts: '/html/bbsp/dnsconfiguration/dnshosts.asp',
+  dnsHostsData: '/html/bbsp/common/dnshostslist.asp',
   // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
   wanList: '/html/bbsp/common/wan_list.asp',
 } as const;
@@ -50,6 +53,7 @@ export const WRITABLE_PAGES = {
   portTrigger: ['add', 'set', 'del'],
   wifi: ['add', 'set', 'del'],
   parental: ['add', 'set', 'del'],
+  dnsHosts: ['add', 'set', 'del'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;

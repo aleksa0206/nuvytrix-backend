@@ -44,7 +44,10 @@ export type AuditAction =
   | 'router.parental_url_deleted'
   | 'router.parental_device_created'
   | 'router.parental_device_updated'
-  | 'router.parental_device_deleted';
+  | 'router.parental_device_deleted'
+  | 'router.dns_host_created'
+  | 'router.dns_host_updated'
+  | 'router.dns_host_deleted';
 
 export interface AuditEntry {
   adminId: number | null;

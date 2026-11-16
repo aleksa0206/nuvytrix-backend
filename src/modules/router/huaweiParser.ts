@@ -728,3 +728,19 @@ export function parseParental(page: string): ParentalState | null {
       })),
   };
 }
+
+export interface DnsHost {
+  /** TR-098 path (`InternetGatewayDevice.X_HW_DNS.HOSTS.N`). */
+  domain: string;
+  index: number;
+  name: string;
+  ip: string;
+}
+
+/** dnshostslist.asp: `DnsHostsItemClass(domain, IPAddress, DomainName)`. */
+export function parseDnsHosts(page: string): DnsHost[] | null {
+  if (!page.includes('function DnsHostsItemClass')) return null;
+  return parseConstructorCalls(page, 'DnsHostsItemClass')
+    .filter((h) => /\.HOSTS\.\d+$/.test(h[0] ?? ''))
+    .map((h) => ({ domain: h[0]!, index: last(h[0]!), ip: h[1] ?? '', name: h[2] ?? '' }));
+}

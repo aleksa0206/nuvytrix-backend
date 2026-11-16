@@ -32,6 +32,7 @@ import {
   parentalTemplateUpdateSchema,
   parentalUrlSchema,
 } from './routerParental.schema';
+import { dnsHostIndexSchema, dnsHostSchema } from './routerDns.schema';
 
 const router = Router();
 router.use(requireAuth);
@@ -1039,6 +1040,81 @@ router.delete(
   validateParams(parentalDeviceParams),
   asyncHandler(async (req, res) => {
     const result = await container.routerParentalService.deleteDevice(
+      res.locals.params.index,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/dns-hosts:
+ *   get:
+ *     summary: Static DNS entries on the router, read now
+ *     tags: [Router DNS]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Entries and whether Nuvytrix may change them }
+ *   post:
+ *     summary: Add a static DNS entry ({ name, ip }); at most 20, one per name
+ *     tags: [Router DNS]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       201: { description: The new entry }
+ * /router/dns-hosts/{index}:
+ *   put:
+ *     summary: Change a static DNS entry
+ *     tags: [Router DNS]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Updated entry }
+ *   delete:
+ *     summary: Delete a static DNS entry; it is kept in the audit log
+ *     tags: [Router DNS]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Remaining entries }
+ */
+router.get(
+  '/dns-hosts',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerDnsService;
+    res.json({ writesEnabled: service.writesEnabled, hosts: await service.getHosts() });
+  })
+);
+router.post(
+  '/dns-hosts',
+  validateBody(dnsHostSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDnsService.addHost(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result.host);
+  })
+);
+router.put(
+  '/dns-hosts/:index',
+  validateParams(dnsHostIndexSchema),
+  validateBody(dnsHostSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDnsService.updateHost(
+      res.locals.params.index,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.host);
+  })
+);
+router.delete(
+  '/dns-hosts/:index',
+  validateParams(dnsHostIndexSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDnsService.deleteHost(
       res.locals.params.index,
       req.admin!.adminId,
       requestContext(req)
