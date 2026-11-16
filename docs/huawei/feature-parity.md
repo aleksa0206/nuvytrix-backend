@@ -45,9 +45,9 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | Parental control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | several pages, templates and schedules |
 | Precise device access control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | Device access control (Telnet/HTTP from LAN/Wi-Fi) | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | risk of locking out the web UI |
-| DMZ: set host, on / off, remove | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding & DMZ | ✅ 2026-11-16 (script) | server and admin PC cannot be the DMZ host |
+| DMZ: set host, on / off, remove | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding & DMZ | ✅ 2026-11-16: script, then through Nuvytrix (server refused; set off, on, off, remove) | server and admin PC cannot be the DMZ host |
 | IPv4 port mapping: add / edit / delete, on / off | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding | ✅ 2026-11-16: script, then through Nuvytrix (router as target refused; add off, edit to UDP range, on, off, delete) | one port range per mapping is edited here; mappings with several ranges can only be deleted |
-| Port trigger: add / edit / delete | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding & DMZ | ✅ 2026-11-16 (script) | |
+| Port trigger: add / edit / delete | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding & DMZ | ✅ 2026-11-16: script, then through Nuvytrix (add off, edit on, delete) | |
 | UPnP mappings (live) | ✅ | ✅ (UPnP) | — | ✅ | ✅ | ✅ | |
 | UPnP on/off | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | USB / FTP, media sharing | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | no USB device in use |

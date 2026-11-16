@@ -42,7 +42,10 @@ The DMZ form also lists `x.Name` with the "do not send" flag; it is not posted.
 1. Script `~/router-research/dmzpttest.py` with the unused address `.250`: DMZ created off, turned on,
    turned off, deleted; trigger TCP 40010 → UDP 40011–40012 added off, changed to on and
    TCP/UDP 40011–40013, deleted. Every step read back; both ended empty, as before.
-2. Through the deployed Nuvytrix: see the parity table.
+2. Through the deployed Nuvytrix on 2026-11-16: the server (`.27`) as DMZ host was refused with
+   nothing sent; DMZ host `.250` set off, turned on, turned off, removed; trigger TCP 40010 → UDP
+   40011–40012 added off, changed to on and 40011–40013, deleted. Seven `audit_logs` rows, all
+   `applied`; nothing left on the router.
 
 ## Undo
 
