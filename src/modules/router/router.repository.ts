@@ -11,6 +11,8 @@ export interface RouterSampleInput {
   opticalBiasMa: number | null;
   wanBytesSent: number | null;
   wanBytesReceived: number | null;
+  ponBytesSent: number | null;
+  ponBytesReceived: number | null;
   wifiClients: number | null;
   devicesOnline: number | null;
   lanPorts: unknown;
@@ -27,6 +29,8 @@ export interface RouterSampleRow {
   optical_temperature_c: number | null;
   wan_bytes_sent: number | null;
   wan_bytes_received: number | null;
+  pon_bytes_sent: number | null;
+  pon_bytes_received: number | null;
   wifi_clients: number | null;
   devices_online: number | null;
   lan_ports: { bytesSent: number; bytesReceived: number }[] | null;
@@ -48,6 +52,8 @@ export class RouterRepository {
       optical_bias_ma: sample.opticalBiasMa,
       wan_bytes_sent: sample.wanBytesSent,
       wan_bytes_received: sample.wanBytesReceived,
+      pon_bytes_sent: sample.ponBytesSent,
+      pon_bytes_received: sample.ponBytesReceived,
       wifi_clients: sample.wifiClients,
       devices_online: sample.devicesOnline,
       lan_ports: JSON.stringify(sample.lanPorts ?? null),
@@ -69,6 +75,8 @@ export class RouterRepository {
         'optical_temperature_c',
         'wan_bytes_sent',
         'wan_bytes_received',
+        'pon_bytes_sent',
+        'pon_bytes_received',
         'wifi_clients',
         'devices_online',
         'lan_ports',

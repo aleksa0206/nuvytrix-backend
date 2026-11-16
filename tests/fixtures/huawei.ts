@@ -16,7 +16,8 @@ var memUsed = '39%';
 </script>`;
 
 export const OPTIC_PAGE = `
-var opticInfos = new Array(new stOpticInfo("InternetGatewayDevice.X_HW_DEBUG.AMP.Optic","ok"," 3.59","-17.10","3376","52","26","--","--","HUAWEI          ","MODULE-SN-SECRET","210605","1310","1490","20","0"),null);`;
+var opticInfos = new Array(new stOpticInfo("InternetGatewayDevice.X_HW_DEBUG.AMP.Optic","ok"," 3.59","-17.10","3376","52","26","--","--","HUAWEI          ","MODULE-SN-SECRET","210605","1310","1490","20","0"),null);
+var Stats = new Array(new stStats("InternetGatewayDevice.WANDevice.1.X_GponInterafceConfig.Stats","0","0","0","4507039328","35770381452","11507452","32267563"),null);`;
 
 export const ETH_PAGE = `
 var devInfo = new stDevInfo("InternetGatewayDevice.DeviceInfo","SERIAL","1","LOID-SECRET","EPON-PASSWORD-SECRET","HEX-SECRET");

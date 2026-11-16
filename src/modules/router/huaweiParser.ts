@@ -142,12 +142,22 @@ export interface OpticalInfo {
   txWavelengthNm: number | null;
   rxWavelengthNm: number | null;
   lossOfSignal: boolean;
+  /** GPON interface byte counters (64-bit): all traffic to and from the internet. */
+  ponBytesSent: number | null;
+  ponBytesReceived: number | null;
 }
 
-/** opticinfo.asp. The module serial number (VendorSN) is not read. */
+/**
+ * opticinfo.asp: `stOpticInfo` and the GPON interface `stStats(domain, ErrorsSent, ErrorsReceived,
+ * DiscardPacketsReceived, BytesSent, BytesReceived, PacketsSent, PacketsReceived)`.
+ * The module serial number (VendorSN) is not read.
+ */
 export function parseOptical(page: string): OpticalInfo | null {
   const o = parseConstructorCalls(page, 'stOpticInfo')[0];
   if (!o) return null;
+  const stats = parseConstructorCalls(page, 'stStats').find((s) =>
+    (s[0] ?? '').endsWith('.X_GponInterafceConfig.Stats')
+  );
   return {
     linkStatus: (o[1] ?? '').trim(),
     txPowerDbm: toNumber(o[2]),
@@ -159,6 +169,8 @@ export function parseOptical(page: string): OpticalInfo | null {
     txWavelengthNm: toNumber(o[12]),
     rxWavelengthNm: toNumber(o[13]),
     lossOfSignal: (o[15] ?? '0').trim() === '1',
+    ponBytesSent: toNumber(stats?.[4]),
+    ponBytesReceived: toNumber(stats?.[5]),
   };
 }
 

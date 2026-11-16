@@ -174,20 +174,21 @@ describe('router integration', () => {
     });
   });
 
-  it('computes WAN rates from consecutive samples and ignores counter resets', async () => {
-    (container.routerService as unknown as { settings: { host: string } }).settings.host =
-      '192.168.100.1';
+  it('computes WAN rates from the GPON counters and ignores counter resets', async () => {
     const base = Date.now() - 60_000;
     await container.routerService.poll();
-    upnp.bytesReceived = 2_250_000;
     await container.routerService.poll();
-    upnp.bytesReceived = 100;
     await container.routerService.poll();
     const ids = (await db('router_samples').orderBy('id').select('id')).map((row) => row.id);
-    for (const [index, offset] of [0, 10_000, 15_000].entries()) {
+    expect((await db('router_samples').first()).pon_bytes_received).toBe(35770381452);
+    for (const [index, [offset, received]] of [
+      [0, 1_000_000],
+      [10_000, 2_250_000],
+      [15_000, 100],
+    ].entries()) {
       await db('router_samples')
         .where('id', ids[index])
-        .update({ captured_at: new Date(base + offset) });
+        .update({ captured_at: new Date(base + offset!), pon_bytes_received: received });
     }
 
     const history = await container.routerService.getHistory(1);

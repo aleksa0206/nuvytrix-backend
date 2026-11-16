@@ -73,6 +73,8 @@ describe('huawei page parsing', () => {
       txWavelengthNm: 1310,
       rxWavelengthNm: 1490,
       lossOfSignal: false,
+      ponBytesSent: 4507039328,
+      ponBytesReceived: 35770381452,
     });
     expect(JSON.stringify(optical)).not.toContain('SECRET');
   });

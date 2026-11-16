@@ -145,6 +145,8 @@ export class RouterService {
           opticalBiasMa: snapshot.optical?.biasMa ?? null,
           wanBytesSent: wan?.bytesSent ?? null,
           wanBytesReceived: wan?.bytesReceived ?? null,
+          ponBytesSent: snapshot.optical?.ponBytesSent ?? null,
+          ponBytesReceived: snapshot.optical?.ponBytesReceived ?? null,
           wifiClients: pages ? snapshot.wifiClients.length : null,
           devicesOnline: pages ? snapshot.devices.filter((d) => d.online).length : null,
           lanPorts: snapshot.lanPorts,
@@ -249,11 +251,11 @@ export class RouterService {
           opticalRxDbm: row.optical_rx_dbm,
           opticalTxDbm: row.optical_tx_dbm,
           opticalTemperatureC: row.optical_temperature_c,
-          wanDownloadBps: rate(row.wan_bytes_received, previous?.wan_bytes_received),
-          wanUploadBps: rate(row.wan_bytes_sent, previous?.wan_bytes_sent),
-          // The UPnP WAN counters miss hardware-accelerated (forwarded) traffic, so real use is
-          // measured on the LAN side: bytes the router sent to / received from LAN ports and Wi-Fi.
-          // This includes traffic between local devices as well as internet traffic.
+          // Internet traffic from the GPON interface counters. The UPnP WAN counters
+          // (wan_bytes_*) miss hardware-forwarded traffic, so they are stored but not charted.
+          wanDownloadBps: rate(row.pon_bytes_received, previous?.pon_bytes_received),
+          wanUploadBps: rate(row.pon_bytes_sent, previous?.pon_bytes_sent),
+          // Bytes the router sent to / received from LAN ports and Wi-Fi, local traffic included.
           lanDownloadBps: rate(
             lanTotal(row, 'bytesSent'),
             previous && lanTotal(previous, 'bytesSent')
