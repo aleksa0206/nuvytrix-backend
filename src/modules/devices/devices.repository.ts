@@ -14,7 +14,11 @@ const SORT_COLUMNS: Record<DeviceListQuery['sort'], string> = {
 };
 
 export class DevicesRepository {
-  constructor(private db: Knex) {}
+  /** @param ownAddresses the server's own IPs: the only hosts nmap reports without a MAC. */
+  constructor(
+    private db: Knex,
+    private ownAddresses: string[] = []
+  ) {}
 
   async createScan(target: string, triggeredBy: number | null): Promise<ScanRow> {
     const [scan] = await this.db('discovery_scans')
@@ -85,12 +89,16 @@ export class DevicesRepository {
       for (const host of hosts) {
         const existing = await (host.macAddress
           ? trx<DeviceRow>('devices').where({ mac_address: host.macAddress }).first()
-          : // No MAC (the scanning server itself): the record on this IP, which the router may have
-            // given a MAC already.
-            trx<DeviceRow>('devices')
-              .where({ ip_address: host.ipAddress })
-              .orderByRaw('mac_address IS NULL DESC, last_seen_at DESC')
-              .first());
+          : this.ownAddresses.includes(host.ipAddress)
+            ? // The scanning server itself: its record may carry the MAC the router reported.
+              trx<DeviceRow>('devices')
+                .where({ ip_address: host.ipAddress })
+                .orderByRaw('mac_address IS NULL DESC, last_seen_at DESC')
+                .first()
+            : trx<DeviceRow>('devices')
+                .whereNull('mac_address')
+                .andWhere({ ip_address: host.ipAddress })
+                .first());
 
         let deviceId: number;
         if (existing) {

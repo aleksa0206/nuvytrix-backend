@@ -30,7 +30,9 @@ export class DeviceIntelService {
 
   constructor(
     private db: Knex,
-    private alerts?: AlertsService
+    private alerts?: AlertsService,
+    /** The server's own IPs; only their MAC-less records may take a MAC from the router. */
+    private ownAddresses: string[] = []
   ) {}
 
   async recordEvent(
@@ -125,8 +127,8 @@ export class DeviceIntelService {
             reservations === null ? undefined : (reservedByMac.get(d.macAddress) ?? null),
         };
         let existing = byMac.get(d.macAddress);
-        if (!existing && d.ipAddress) {
-          // nmap never sees the scanning server's own MAC: adopt the MAC-less record on this IP.
+        if (!existing && d.ipAddress && this.ownAddresses.includes(d.ipAddress)) {
+          // nmap never sees the scanning server's own MAC: adopt the server's MAC-less record.
           const adopted = await trx('devices')
             .whereNull('mac_address')
             .where('ip_address', d.ipAddress)

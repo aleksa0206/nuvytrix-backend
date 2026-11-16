@@ -141,6 +141,7 @@ describe('device intelligence', () => {
   });
 
   it('gives the MAC-less server record its MAC from the router instead of a duplicate', async () => {
+    resetContainer({ hostDiscoverer: discoverer, ownAddresses: ['192.168.100.27'] });
     const server = {
       ipAddress: '192.168.100.27',
       macAddress: null,
@@ -165,6 +166,28 @@ describe('device intelligence', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].mac_address).toBe('78:84:3c:04:c3:14');
     expect(await alertTitles()).toEqual(['New device on the network: aleksa']);
+  });
+
+  it('never lets another device take over a record on the same IP', async () => {
+    const stranger = {
+      ipAddress: '192.168.100.80',
+      macAddress: null,
+      vendor: null,
+      hostname: null,
+    };
+    discoverer.hosts = [stranger];
+    await scan();
+    await db('devices').update({ trusted: true });
+    await container.deviceIntelService.syncFromRouter(
+      [routerDevice({ macAddress: 'de:ad:be:ef:00:80', ipAddress: '192.168.100.80' })],
+      null
+    );
+
+    const rows = await db('devices').orderBy('id');
+    expect(rows.map((r) => [r.mac_address, r.trusted])).toEqual([
+      [null, true],
+      ['de:ad:be:ef:00:80', null],
+    ]);
   });
 
   it('reports an IP conflict between two online devices once', async () => {

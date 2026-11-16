@@ -1,3 +1,4 @@
+import { ownIpv4Addresses } from '../common/utils/ownAddresses';
 import { db } from '../config/db';
 import { env } from '../config/env';
 import { AuditRepository } from '../modules/audit/audit.repository';
@@ -48,6 +49,7 @@ export interface ContainerOverrides {
   routerWebClient?: HuaweiWebClient;
   routerWritesEnabled?: boolean;
   routerDiagnosticsTiming?: { pollMs: number; maxWaitMs: number };
+  ownAddresses?: string[];
   upnpClient?: UpnpClient;
 }
 
@@ -95,10 +97,11 @@ class Container {
   public routerIpv6Service: RouterIpv6Service;
 
   constructor(overrides: ContainerOverrides = {}) {
+    const ownAddresses = overrides.ownAddresses ?? ownIpv4Addresses();
     this.auditRepository = new AuditRepository(db);
     this.auditService = new AuditService(this.auditRepository);
     this.alertsService = new AlertsService(db);
-    this.deviceIntelService = new DeviceIntelService(db, this.alertsService);
+    this.deviceIntelService = new DeviceIntelService(db, this.alertsService, ownAddresses);
 
     this.authRepository = new AuthRepository(db);
     this.authService = new AuthService(this.authRepository, this.auditService, {
@@ -106,7 +109,7 @@ class Container {
       maxAgeHours: env.SESSION_MAX_AGE_HOURS,
     });
 
-    this.devicesRepository = new DevicesRepository(db);
+    this.devicesRepository = new DevicesRepository(db, ownAddresses);
     this.devicesService = new DevicesService(
       this.devicesRepository,
       overrides.hostDiscoverer ??
