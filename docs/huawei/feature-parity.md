@@ -13,7 +13,7 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | CPU / memory | ✅ | ✅ | — | ✅ + history | ✅ chart | ✅ | percentages only |
 | ONT registration state | ✅ | ✅ | — | ✅ | ✅ | ✅ | |
 | WAN status, external IP, NAT | ✅ | ✅ (UPnP) | ⚠️ ISP-managed | ✅ | ✅ | ✅ | detailed WAN fields ⏳ |
-| WAN traffic counters | ✅ | ✅ (GPON `stStats` on opticinfo.asp) | — | ✅ stored | ✅ Internet traffic chart | ⚠️ 2026-11-16: 50 MB download = +57 MB on GPON counters; chart not yet seen with real points | UPnP counters miss hardware-forwarded traffic, so they are stored but not charted |
+| WAN traffic counters | ✅ | ✅ (GPON `stStats` on opticinfo.asp) | — | ✅ stored | ✅ Internet traffic chart | ✅ 2026-11-16: 50 MB download = +57 MB on GPON counters; history returns GPON-based rates on the server | UPnP counters miss hardware-forwarded traffic, so they are stored but not charted |
 | Traffic to devices (LAN + Wi-Fi) | ✅ | ✅ | — | ✅ rate history | ✅ chart | ✅ | includes local device-to-device traffic |
 | Optical module (Rx/Tx, temperature, voltage, bias) | ✅ | ✅ | — | ✅ + history | ✅ chart | ✅ | no router-side history |
 | GPON interface counters | ✅ | ✅ | — | ❌ | ❌ | ❌ | low value; not built |
