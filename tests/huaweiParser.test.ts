@@ -144,6 +144,10 @@ describe('huawei page parsing', () => {
     });
   });
 
+  it('keeps one entry per MAC when the page repeats the device list', () => {
+    expect(parseRouterDevices(DEVICES_PAGE + DEVICES_PAGE)).toHaveLength(3);
+  });
+
   it('reads the IPv4 filter state and rules', () => {
     expect(parseIpFilter(IP_FILTER_PAGE)).toEqual({
       enabled: true,

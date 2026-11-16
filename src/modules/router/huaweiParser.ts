@@ -307,8 +307,16 @@ export interface RouterDevice {
 
 /** GetLanUserDevInfo.asp */
 export function parseRouterDevices(page: string): RouterDevice[] {
+  // The device page embeds the same list more than once; keep one entry per MAC.
+  const seen = new Set<string>();
   return parseConstructorCalls(page, 'USERDevice')
     .filter((d) => /^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/.test(d[2] ?? ''))
+    .filter((d) => {
+      const mac = d[2]!.toLowerCase();
+      if (seen.has(mac)) return false;
+      seen.add(mac);
+      return true;
+    })
     .map((d) => ({
       macAddress: d[2]!.toLowerCase(),
       ipAddress: d[1] || null,
