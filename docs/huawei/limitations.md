@@ -38,6 +38,6 @@
 | Goal | Hardware or setup |
 | --- | --- |
 | Per-device traffic and top talkers | Own router behind the ONT (OpenWrt, OPNsense, MikroTik) with flow accounting, or a managed switch with port mirroring feeding a sensor (ntopng, Zeek) |
-| Per-port traffic for each wired device | Managed switch with SNMP replacing the TL-SG1005D |
+| Per-port traffic for each wired device | Managed switch with SNMP replacing the TL-SG1008D |
 | Firewall rules with a real API | Own router/firewall (OPNsense, OpenWrt, RouterOS) with the Huawei in bridge mode, if the ISP allows it |
 | DNS per device | AdGuard Home on the server as the LAN DNS (no hardware needed) |

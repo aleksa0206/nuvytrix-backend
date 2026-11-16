@@ -20,7 +20,7 @@ Status labels: **IMPLEMENTED**, **PARTIALLY_IMPLEMENTED**, **MISSING**, **HARDWA
 | Backups | Cron 03:00–03:40: staffaway, remly, focentra, veltris (`.sql.gz`) and Nuvytrix (`pg_dump -Fc`, verified with `pg_restore --list`, 30-day retention) into `/mnt/data/backups` (63 files). All logs show `ok` for 2026-11-15 and 2026-11-16. **homewise and portfolio have MySQL but no backup job.** |
 | Logs | `/var/log/auth.log` is `syslog:adm 0640`; user `aleksa` is in `adm`, so a read-only mount works without root. |
 | Remote access | Tailscale up; WAN is CGNAT. |
-| Switch | TP-Link TL-SG1008D, unmanaged (README said TL-SG1005D; corrected). |
+| Switch | TP-Link TL-SG1008D, unmanaged (older docs said TL-SG1005D; corrected). |
 
 ## 2. Capability inventory
 
