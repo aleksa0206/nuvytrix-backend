@@ -827,6 +827,8 @@ export interface WifiRadio {
   power: number;
   standard: string;
   country: string;
+  /** `X_HW_HT20` code: 0 auto 20/40, 1 20 MHz, 2 40 MHz, 3 auto 20/40/80, 4 160 MHz. */
+  channelWidth: string;
 }
 
 /**
@@ -845,5 +847,18 @@ export function parseWifiRadios(page: string): WifiRadio[] | null {
       power: Number(w[6]),
       standard: w[4] ?? '',
       country: w[7] ?? '',
+      channelWidth: w[9] ?? '',
     }));
+}
+
+/**
+ * WlanBasic.asp: `stWpsPin(domain, X_HW_ConfigMethod, DevicePassword, X_HW_PinGenerator, Enable)`.
+ * Returns only the network and whether WPS is on; the PIN (DevicePassword) is never read.
+ */
+export function parseWpsStates(page: string): Map<string, boolean> {
+  return new Map(
+    parseConstructorCalls(page, 'stWpsPin')
+      .filter((w) => /\.WLANConfiguration\.\d+\.WPS$/.test(w[0] ?? ''))
+      .map((w) => [w[0]!.replace(/\.WPS$/, ''), w[4] === '1'])
+  );
 }

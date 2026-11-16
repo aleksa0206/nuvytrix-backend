@@ -23,7 +23,13 @@ import { portMappingIndexSchema, portMappingSchema } from './routerPortMapping.s
 import { dmzSchema, portTriggerSchema, triggerIndexSchema } from './routerForwarding.schema';
 import { wifiCreateSchema, wifiIndexSchema, wifiUpdateSchema } from './routerWifi.schema';
 import { wifiScheduleSchema } from './routerWifiSchedule.service';
-import { CHANNELS, POWER_LEVELS, wifiRadioSchema } from './routerWifiRadio.service';
+import {
+  CHANNELS,
+  POWER_LEVELS,
+  wifiRadioSchema,
+  WIDTHS,
+  wpsSchema,
+} from './routerWifiRadio.service';
 import { ledSchema } from './routerLed.service';
 import { diagnosticsSchema } from './routerDiagnostics.service';
 import { deviceAccessSchema } from './routerAccess.service';
@@ -1292,7 +1298,7 @@ router.put(
  *     responses:
  *       200: { description: Radios, offered channels and power levels }
  *   put:
- *     summary: Set a band's channel (auto or manual) and transmit power
+ *     summary: Set a band's channel (auto or manual), transmit power and channel width
  *     description: Restarts that radio, so its Wi-Fi devices drop for a moment. Read back; audited.
  *     tags: [Router Wi-Fi]
  *     security: [{ cookieAuth: [] }]
@@ -1308,6 +1314,7 @@ router.get(
       radios: await service.getRadios(),
       channels: CHANNELS,
       powerLevels: POWER_LEVELS,
+      widths: WIDTHS,
     });
   })
 );
@@ -1316,6 +1323,30 @@ router.put(
   validateBody(wifiRadioSchema),
   asyncHandler(async (req, res) => {
     const result = await container.routerWifiRadioService.setRadio(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.radio);
+  })
+);
+
+/**
+ * @swagger
+ * /router/wifi-wps:
+ *   put:
+ *     summary: Turn WPS (push button) on or off for a band's main network ({ band, enabled })
+ *     description: The WPS PIN is never read or returned. Read back; audited.
+ *     tags: [Router Wi-Fi]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: The radio as read back, with wpsEnabled }
+ */
+router.put(
+  '/wifi-wps',
+  validateBody(wpsSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerWifiRadioService.setWps(
       req.body,
       req.admin!.adminId,
       requestContext(req)
