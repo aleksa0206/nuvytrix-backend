@@ -51,7 +51,7 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | UPnP mappings (live) | ✅ | ✅ (UPnP) | — | ✅ | ✅ | ✅ | |
 | UPnP on/off | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | USB / FTP, media sharing | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | no USB device in use |
-| DDNS | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | not needed behind CGNAT |
+| DDNS: add / edit / delete (internet WAN) | ✅ | ✅ (no password) | ✅ | ✅ | ✅ Router → DHCP & DNS | ✅ 2026-11-16: script, then through Nuvytrix with a disabled made-up entry | password write-only; gnudip providers not offered; of no use behind CGNAT |
 | Static DNS entries: add / edit / delete (IPv4 and IPv6) | ✅ | ✅ | ✅ | ✅ | ✅ Router → DHCP & DNS | ✅ 2026-11-16: script, then through Nuvytrix (IPv4 and IPv6) | at most 20; one IPv4 and one IPv6 address per name |
 | DNS servers handed out by DHCP | ✅ | ✅ | ⚠️ | ❌ | ❌ | ⚠️ attempt timed out, not applied | see dns-management.md; needs the owner's go-ahead to retry |
 | Wi-Fi networks: name, on / off, name broadcast, WPA2 or WPA/WPA2 key; add / remove extra networks | ✅ | ✅ | ✅ | ✅ | ✅ Router → Wi-Fi | ✅ 2026-11-16: script, then through Nuvytrix with a temporary network | the page holds keys: compared, never returned or logged; open/WEP never set; main networks cannot be removed |
