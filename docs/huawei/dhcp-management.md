@@ -43,7 +43,10 @@ The router's form validates nothing on this model (`ProductType = 1`), so Nuvytr
    changed it to `.251`, deleted it; each step read back. Router ended with no reservations.
 2. Script `~/router-research/dhcppooltest.py`: lease 86400 → 43200 → 86400, range re-sent
    unchanged; read back each time.
-3. Through Nuvytrix (deployed app): see the parity table for the date.
+3. Through the deployed Nuvytrix on 2026-11-16: reservation `02:4e:56:00:00:01` added at `.250`,
+   moved to `.251`; a pool ending at `.200` was refused (it would drop the reservation) with nothing
+   sent; lease set to 12 h and back to 1 day; reservation deleted. Five `audit_logs` rows, all
+   `applied`. The router ended in its original state.
 
 ## Undo
 
