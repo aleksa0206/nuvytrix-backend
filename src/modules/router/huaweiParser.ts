@@ -815,3 +815,35 @@ export function parseWifiSchedule(page: string): WifiSchedule | null {
       })),
   };
 }
+
+export interface WifiRadio {
+  /** The band's first network, which carries the radio settings (`…WLANConfiguration.N`). */
+  domain: string;
+  band: '2.4 GHz' | '5 GHz';
+  /** The configured channel; 0 with automatic selection. */
+  channel: number;
+  autoChannel: boolean;
+  /** Transmit power in percent. */
+  power: number;
+  standard: string;
+  country: string;
+}
+
+/**
+ * WlanBasic.asp: `stWlanWifi(domain, name, enable, ssid, mode, channel, power, Country,
+ * AutoChannelEnable, channelWidth)`, one per radio. Holds no keys.
+ */
+export function parseWifiRadios(page: string): WifiRadio[] | null {
+  if (!page.includes('function stWlanWifi(')) return null;
+  return parseConstructorCalls(page, 'stWlanWifi')
+    .filter((w) => /\.WLANConfiguration\.\d+$/.test(w[0] ?? ''))
+    .map((w) => ({
+      domain: w[0]!,
+      band: bandOf(last(w[0]!)),
+      channel: Number(w[5]),
+      autoChannel: w[8] === '1',
+      power: Number(w[6]),
+      standard: w[4] ?? '',
+      country: w[7] ?? '',
+    }));
+}

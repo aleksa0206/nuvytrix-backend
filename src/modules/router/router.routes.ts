@@ -23,6 +23,7 @@ import { portMappingIndexSchema, portMappingSchema } from './routerPortMapping.s
 import { dmzSchema, portTriggerSchema, triggerIndexSchema } from './routerForwarding.schema';
 import { wifiCreateSchema, wifiIndexSchema, wifiUpdateSchema } from './routerWifi.schema';
 import { wifiScheduleSchema } from './routerWifiSchedule.service';
+import { CHANNELS, POWER_LEVELS, wifiRadioSchema } from './routerWifiRadio.service';
 import {
   parentalDeviceParams,
   parentalDeviceSchema,
@@ -1275,6 +1276,48 @@ router.put(
       requestContext(req)
     );
     res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/wifi-radios:
+ *   get:
+ *     summary: Channel and transmit power per Wi-Fi band, with the values Nuvytrix offers
+ *     tags: [Router Wi-Fi]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Radios, offered channels and power levels }
+ *   put:
+ *     summary: Set a band's channel (auto or manual) and transmit power
+ *     description: Restarts that radio, so its Wi-Fi devices drop for a moment. Read back; audited.
+ *     tags: [Router Wi-Fi]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: The radio as read back }
+ */
+router.get(
+  '/wifi-radios',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerWifiRadioService;
+    res.json({
+      writesEnabled: service.writesEnabled,
+      radios: await service.getRadios(),
+      channels: CHANNELS,
+      powerLevels: POWER_LEVELS,
+    });
+  })
+);
+router.put(
+  '/wifi-radios',
+  validateBody(wifiRadioSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerWifiRadioService.setRadio(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.radio);
   })
 );
 

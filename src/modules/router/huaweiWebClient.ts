@@ -35,6 +35,8 @@ export const ALLOWED_PAGES = {
   ddns: '/html/bbsp/ddns/ddns.asp',
   upnp: '/html/bbsp/upnp/upnp.asp',
   wifiSchedule: '/html/amp/wifische/WlanSchedule.asp',
+  // Form token for radio settings; the values are read back from `wifi`.
+  wifiAdvanced: '/html/amp/wlanadv/WlanAdvance.asp',
   // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
   wanList: '/html/bbsp/common/wan_list.asp',
 } as const;
@@ -61,6 +63,7 @@ export const WRITABLE_PAGES = {
   ddns: ['add', 'set', 'del'],
   upnp: ['set'],
   wifiSchedule: ['set'],
+  wifiAdvanced: ['set'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;
