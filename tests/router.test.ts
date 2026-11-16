@@ -37,6 +37,7 @@ const PAGES: Record<RouterPage, string> = {
   parentalInfo: '',
   dnsHosts: '',
   dnsHostsData: '',
+  ddns: '',
 };
 
 class FakeWeb extends HuaweiWebClient {

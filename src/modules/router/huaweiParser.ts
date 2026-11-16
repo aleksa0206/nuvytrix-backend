@@ -744,3 +744,41 @@ export function parseDnsHosts(page: string): DnsHost[] | null {
     .filter((h) => /\.HOSTS\.\d+$/.test(h[0] ?? ''))
     .map((h) => ({ domain: h[0]!, index: last(h[0]!), ip: h[1] ?? '', name: h[2] ?? '' }));
 }
+
+export interface DdnsEntry {
+  /** TR-098 path (`<WAN>.X_HW_DDNSConfiguration.N`). */
+  domain: string;
+  index: number;
+  enabled: boolean;
+  provider: string;
+  username: string;
+  port: number | null;
+  /** The name kept up to date at the provider. */
+  domainName: string;
+  /** The provider's update server. */
+  serverHost: string;
+  status: string;
+  lastError: string;
+}
+
+/**
+ * ddns.asp: `stDdns(domain, Enable, Provider, Username, Port, DomainName, HostName, SaltAddress,
+ * Status, LastError, LastUpdateTime)`. The page never contains the DDNS password.
+ */
+export function parseDdns(page: string): DdnsEntry[] | null {
+  if (!page.includes('function stDdns')) return null;
+  return parseConstructorCalls(page, 'stDdns')
+    .filter((d) => /\.X_HW_DDNSConfiguration\.\d+$/.test(d[0] ?? ''))
+    .map((d) => ({
+      domain: d[0]!,
+      index: last(d[0]!),
+      enabled: d[1] === '1',
+      provider: d[2] ?? '',
+      username: d[3] ?? '',
+      port: toNumber(d[4]),
+      domainName: d[5] ?? '',
+      serverHost: d[6] ?? '',
+      status: d[8] ?? '',
+      lastError: d[9] ?? '',
+    }));
+}

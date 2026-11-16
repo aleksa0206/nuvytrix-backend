@@ -33,6 +33,7 @@ import {
   parentalUrlSchema,
 } from './routerParental.schema';
 import { dnsHostIndexSchema, dnsHostSchema } from './routerDns.schema';
+import { ddnsCreateSchema, ddnsIndexSchema, ddnsUpdateSchema } from './routerDdns.schema';
 
 const router = Router();
 router.use(requireAuth);
@@ -1115,6 +1116,81 @@ router.delete(
   validateParams(dnsHostIndexSchema),
   asyncHandler(async (req, res) => {
     const result = await container.routerDnsService.deleteHost(
+      res.locals.params.index,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/ddns:
+ *   get:
+ *     summary: Dynamic DNS entries on the internet WAN, read now (never their passwords)
+ *     tags: [Router DNS]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Entries and whether Nuvytrix may change them }
+ *   post:
+ *     summary: Add a DDNS entry ({ enabled, provider, username, password, domainName, serverHost, port })
+ *     tags: [Router DNS]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       201: { description: The new entry }
+ * /router/ddns/{index}:
+ *   put:
+ *     summary: Change a DDNS entry; the password stays unchanged when left out
+ *     tags: [Router DNS]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Updated entry }
+ *   delete:
+ *     summary: Delete a DDNS entry; it is kept in the audit log (without its password)
+ *     tags: [Router DNS]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Remaining entries }
+ */
+router.get(
+  '/ddns',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerDdnsService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getState()) });
+  })
+);
+router.post(
+  '/ddns',
+  validateBody(ddnsCreateSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDdnsService.addEntry(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result.entry);
+  })
+);
+router.put(
+  '/ddns/:index',
+  validateParams(ddnsIndexSchema),
+  validateBody(ddnsUpdateSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDdnsService.updateEntry(
+      res.locals.params.index,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.entry);
+  })
+);
+router.delete(
+  '/ddns/:index',
+  validateParams(ddnsIndexSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDdnsService.deleteEntry(
       res.locals.params.index,
       req.admin!.adminId,
       requestContext(req)

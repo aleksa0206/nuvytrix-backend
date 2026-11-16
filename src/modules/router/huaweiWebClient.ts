@@ -31,6 +31,8 @@ export const ALLOWED_PAGES = {
   // Static DNS: the form on dnshosts.asp, the data in dnshostslist.asp.
   dnsHosts: '/html/bbsp/dnsconfiguration/dnshosts.asp',
   dnsHostsData: '/html/bbsp/common/dnshostslist.asp',
+  // DDNS: the page lists entries without their passwords (write-only on the router).
+  ddns: '/html/bbsp/ddns/ddns.asp',
   // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
   wanList: '/html/bbsp/common/wan_list.asp',
 } as const;
@@ -54,6 +56,7 @@ export const WRITABLE_PAGES = {
   wifi: ['add', 'set', 'del'],
   parental: ['add', 'set', 'del'],
   dnsHosts: ['add', 'set', 'del'],
+  ddns: ['add', 'set', 'del'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;
