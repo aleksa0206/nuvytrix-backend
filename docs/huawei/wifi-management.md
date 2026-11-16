@@ -76,7 +76,23 @@ Verified by script and through the deployed Nuvytrix with the period Sunday 03:0
 Monday, so Wi-Fi never went off): saved, switched on, switched off and cleared. The UI warns when
 switching on would turn Wi-Fi off at once.
 
+## Radio channel and transmit power (verified 2026-11-16)
+
+The advanced page `/html/amp/wlanadv/WlanAdvance.asp` (logic in `wlanadvance_api.asp`) posts the radio
+settings to the band's first network: `set.cgi?y=<WLANConfiguration.N>&RequestFile=html/amp/wlanadv/WlanAdvance.asp`
+with `y.Channel` (0 = automatic), `y.AutoChannelEnable` and `y.TransmitPower` (100/80/60/40/20).
+The current values are read from `stWlanWifi(domain, name, enable, ssid, mode, channel, power, Country,
+AutoChannelEnable, channelWidth)` on WlanBasic.asp.
+
+Offered channels: 2.4 GHz 1–13 (country RS); 5 GHz only 36–48, because DFS channels can switch the
+radio off while it checks for radar. Channel width and standard are not changed (their value codes
+were not confirmed).
+
+Verified by script (2.4 GHz power 100 → 80 → 100) and through the deployed Nuvytrix (2.4 GHz channel
+6 at 80 %, then automatic at 100 %). Each change restarts that radio briefly; wired devices are not
+affected.
+
 ## Not covered yet
 
-Channel, bandwidth and transmit power (WLAN → Advanced), WPS, WPA3, per-network device
+Channel width, WPS, WPA3, per-network device
 limit and client isolation.

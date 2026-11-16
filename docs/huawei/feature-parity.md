@@ -56,7 +56,8 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | DNS servers handed out by DHCP | ✅ | ✅ | ⚠️ | ❌ | ❌ | ⚠️ attempt timed out, not applied | see dns-management.md; needs the owner's go-ahead to retry |
 | Wi-Fi networks: name, on / off, name broadcast, WPA2 or WPA/WPA2 key; add / remove extra networks | ✅ | ✅ | ✅ | ✅ | ✅ Router → Wi-Fi | ✅ 2026-11-16: script, then through Nuvytrix with a temporary network | the page holds keys: compared, never returned or logged; open/WEP never set; main networks cannot be removed |
 | Wi-Fi automatic shutdown schedule | ✅ | ✅ | ✅ | ✅ | ✅ Router → Wi-Fi | ✅ 2026-11-16: script, then through Nuvytrix (period that could not hit) | four periods |
-| WLAN advanced (channel, bandwidth, power), coverage | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | changing a radio setting drops every Wi-Fi device briefly |
+| Wi-Fi radio: channel (auto / manual) and transmit power | ✅ | ✅ | ✅ | ✅ | ✅ Router → Wi-Fi | ✅ 2026-11-16: script, then through Nuvytrix on 2.4 GHz | 5 GHz manual channels 36–48 only; width not offered; a change restarts that radio |
+| Wi-Fi channel width, WPS, coverage (mesh) | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | |
 | Account management | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | not planned: changing the router password from another app is a lockout risk |
 | ONT authentication | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | not planned: ISP registration data |
 | Configuration file backup | ✅ | download | upload restore | ❌ | ❌ | ❌ | contains secrets; would need encrypted storage |
