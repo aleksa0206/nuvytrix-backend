@@ -81,7 +81,13 @@ export class DevicesService {
   private async runScan(scan: ScanRow): Promise<void> {
     const startedAt = Date.now();
     try {
-      const hosts = await this.discoverer.discover(scan.target);
+      // Names come from the network; clamp them to the column size so one long name cannot fail the scan.
+      const clamp = (value: string | null) => (value === null ? null : value.slice(0, 255));
+      const hosts = (await this.discoverer.discover(scan.target)).map((host) => ({
+        ...host,
+        hostname: clamp(host.hostname),
+        vendor: clamp(host.vendor),
+      }));
       const created = await this.devicesRepository.recordScanResults(scan.id, hosts);
       const newDevices = created.length;
       await this.devicesRepository.completeScan(scan.id, hosts.length, newDevices);

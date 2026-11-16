@@ -134,6 +134,22 @@ describe('alerts', () => {
     ]);
   });
 
+  it('keeps a new-device alert whose network name is too long for a title', async () => {
+    discoverer.hosts = [
+      {
+        ipAddress: '192.168.100.60',
+        macAddress: 'aa:bb:cc:00:00:60',
+        vendor: null,
+        hostname: 'x'.repeat(500),
+      },
+    ];
+    await container.devicesService.startScan(undefined, null);
+    await container.devicesService.waitForActiveScan();
+    const [alert] = (await container.alertsService.list()).alerts;
+    expect(alert!.kind).toBe('new_device');
+    expect(alert!.title).toHaveLength(200);
+  });
+
   it('lists alerts with an unread count and marks them read', async () => {
     await container.alertsService.raise('new_device', 'warning', 'New device on the network: x');
     const agent = await signedInAgent();

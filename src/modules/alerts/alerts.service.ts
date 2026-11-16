@@ -16,6 +16,8 @@ interface AlertRow {
 }
 
 const LIST_LIMIT = 50;
+/** Matches the column length. */
+const TITLE_MAX = 200;
 const RETENTION_DAYS = 90;
 
 /** Notifications shown in the app. Raising one never fails the caller. */
@@ -29,7 +31,14 @@ export class AlertsService {
     details: Record<string, unknown> = {}
   ): Promise<void> {
     try {
-      await this.db('alerts').insert({ kind, severity, title, details: JSON.stringify(details) });
+      // Titles can carry names from the network (DHCP hostnames); never let a long one drop the alert.
+      const safeTitle = title.length > TITLE_MAX ? `${title.slice(0, TITLE_MAX - 1)}…` : title;
+      await this.db('alerts').insert({
+        kind,
+        severity,
+        title: safeTitle,
+        details: JSON.stringify(details),
+      });
       logger.info({ kind, title }, 'Alert raised');
     } catch (err) {
       logger.error({ err, kind }, 'Could not store alert');
