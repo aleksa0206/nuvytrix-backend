@@ -19,7 +19,8 @@ requests, are switched on with `ROUTER_WRITES_ENABLED`, are read back and audite
 | Delete | `del.cgi?x=InternetGatewayDevice.X_HW_DNS.HOSTS` | `<entry>=` |
 
 Rules: at most 20 entries (the router page's limit), one entry per name, names are host names
-(`nas.lan`), addresses IPv4. The router also accepts IPv6 addresses; Nuvytrix does not offer them yet.
+(`nas.lan`), addresses IPv4 or IPv6, one of each per name (as the router page allows). IPv6 verified
+through Nuvytrix on 2026-11-16 (`nuvytrix-test6.lan` → `fd00::250`, added and deleted).
 
 Verified 2026-11-16: by script, then through the deployed Nuvytrix (`nuvytrix-test.lan` → `.250`,
 changed to `.251`, deleted; a second entry for the same name refused).
