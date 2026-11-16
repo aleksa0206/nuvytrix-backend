@@ -124,7 +124,16 @@ export class DeviceIntelService {
           reserved_ip:
             reservations === null ? undefined : (reservedByMac.get(d.macAddress) ?? null),
         };
-        const existing = byMac.get(d.macAddress);
+        let existing = byMac.get(d.macAddress);
+        if (!existing && d.ipAddress) {
+          // nmap never sees the scanning server's own MAC: adopt the MAC-less record on this IP.
+          const adopted = await trx('devices')
+            .whereNull('mac_address')
+            .where('ip_address', d.ipAddress)
+            .update({ mac_address: d.macAddress })
+            .returning('*');
+          existing = adopted[0];
+        }
         let deviceId: number;
         if (!existing) {
           if (!d.online || !d.ipAddress) continue;

@@ -85,9 +85,11 @@ export class DevicesRepository {
       for (const host of hosts) {
         const existing = await (host.macAddress
           ? trx<DeviceRow>('devices').where({ mac_address: host.macAddress }).first()
-          : trx<DeviceRow>('devices')
-              .whereNull('mac_address')
-              .andWhere({ ip_address: host.ipAddress })
+          : // No MAC (the scanning server itself): the record on this IP, which the router may have
+            // given a MAC already.
+            trx<DeviceRow>('devices')
+              .where({ ip_address: host.ipAddress })
+              .orderByRaw('mac_address IS NULL DESC, last_seen_at DESC')
               .first());
 
         let deviceId: number;
