@@ -5,3 +5,6 @@ coverage
 .env.*
 !.env.example
 *.log
+
+# AdGuard Home state on the server
+deploy/adguard/data/

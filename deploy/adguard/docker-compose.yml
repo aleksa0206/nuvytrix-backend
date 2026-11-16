@@ -1,0 +1,28 @@
+# AdGuard Home: DNS filtering for the home network, on the Ubuntu server.
+# A separate compose project (-p adguard), so deploying Nuvytrix never restarts the home's DNS.
+#
+#   cd deploy/adguard && docker compose -p adguard up -d
+#
+# DNS (53) and the admin UI (3000) are published on the LAN address only: not on 0.0.0.0, not on
+# the Tailscale address, never forwarded on the router. Data lives in ./data (not in git).
+# Recovery and rollback: docs/adguard.md.
+name: adguard
+
+services:
+  adguard:
+    image: adguard/adguardhome:latest
+    restart: unless-stopped
+    ports:
+      - '192.168.100.27:53:53/udp'
+      - '192.168.100.27:53:53/tcp'
+      - '192.168.100.27:3000:3000/tcp'
+    volumes:
+      - ./data/work:/opt/adguardhome/work
+      - ./data/conf:/opt/adguardhome/conf
+    healthcheck:
+      # Resolves through itself; fails while DNS is not answering.
+      test: ['CMD', 'nslookup', 'example.com', '127.0.0.1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
