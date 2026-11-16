@@ -119,6 +119,21 @@ describe('port scans', () => {
     expect(open).toHaveLength(1);
   });
 
+  it('stores a port whose service banner is too long without losing the alert', async () => {
+    await addDevice('192.168.100.27');
+    scanner.ports.set('192.168.100.27', [ssh('1')]);
+    await scanAll();
+    const banner = 'x'.repeat(128);
+    scanner.ports.set('192.168.100.27', [
+      ssh('1'),
+      { protocol: 'tcp', port: 8080, service: 'http', product: banner, version: 'y'.repeat(64) },
+    ]);
+    await scanAll();
+    const event = await db('device_events').where({ kind: 'port_opened' }).first();
+    expect(event.new_value.length).toBeLessThanOrEqual(255);
+    expect((await alertTitles())[0]).toContain('New open port on 192.168.100.27: 8080/tcp');
+  });
+
   it('refuses a second scan while one is running', async () => {
     await addDevice('192.168.100.27');
     let release!: () => void;

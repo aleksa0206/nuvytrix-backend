@@ -36,8 +36,13 @@ services:
     # Read-only: the backup disk, so the Server page can report its usage and Nuvytrix can list
     # the backup files. /proc and /sys of the host are visible without mounts (host networking,
     # no privileges needed).
+    # adm (gid 4) may read the host's auth.log (syslog:adm 0640); nothing else is granted.
+    group_add:
+      - '4'
     volumes:
       - /mnt/data:/host/mnt/data:ro
+      # The whole directory, because logrotate replaces auth.log with a new file.
+      - /var/log:/host/var/log:ro
     env_file: .env
     environment:
       NODE_ENV: production
@@ -49,6 +54,7 @@ services:
       TRUST_PROXY: 172.31.250.0/29
       # The read-only Docker API proxy below, reachable from the host network only.
       DOCKER_PROXY_URL: http://127.0.0.1:2375
+      SSH_AUTH_LOG: /host/var/log/auth.log
     depends_on:
       postgres:
         condition: service_healthy

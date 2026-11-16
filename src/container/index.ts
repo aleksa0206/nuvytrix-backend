@@ -45,6 +45,7 @@ import { RouterAccessService } from '../modules/router/routerAccess.service';
 import { RouterIpv6Service } from '../modules/router/routerIpv6.service';
 import { AlertsService } from '../modules/alerts/alerts.service';
 import { DockerMonitorService } from '../modules/docker/dockerMonitor.service';
+import { SshMonitorService } from '../modules/security/sshMonitor.service';
 import {
   ServerMonitorService,
   type ServerMonitorSettings,
@@ -63,6 +64,7 @@ export interface ContainerOverrides {
   serverMonitor?: Partial<ServerMonitorSettings>;
   dockerProxyUrl?: string;
   portScanner?: PortScanner;
+  sshAuthLog?: string;
   upnpClient?: UpnpClient;
 }
 
@@ -72,6 +74,7 @@ class Container {
   public alertsService: AlertsService;
   public serverMonitorService: ServerMonitorService;
   public dockerMonitorService: DockerMonitorService;
+  public sshMonitorService: SshMonitorService;
 
   public authRepository: AuthRepository;
   public authService: AuthService;
@@ -117,6 +120,11 @@ class Container {
     this.auditRepository = new AuditRepository(db);
     this.auditService = new AuditService(this.auditRepository);
     this.alertsService = new AlertsService(db);
+    this.sshMonitorService = new SshMonitorService(
+      db,
+      { logPath: overrides.sshAuthLog ?? env.SSH_AUTH_LOG, retentionDays: 90 },
+      this.alertsService
+    );
     this.dockerMonitorService = new DockerMonitorService(
       { baseUrl: overrides.dockerProxyUrl ?? env.DOCKER_PROXY_URL, token: env.DOCKER_PROXY_TOKEN },
       this.alertsService

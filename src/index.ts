@@ -29,6 +29,16 @@ function startBackgroundJobs() {
   void sampleServer();
   setInterval(sampleServer, 60_000).unref();
 
+  if (container.sshMonitorService.enabled) {
+    const readSsh = () => void container.sshMonitorService.collect();
+    readSsh();
+    setInterval(readSsh, 60_000).unref();
+    setInterval(
+      () => void container.sshMonitorService.deleteExpired().catch(() => 0),
+      HOURLY_MS
+    ).unref();
+  }
+
   if (container.dockerMonitorService.enabled) {
     const pollDocker = () => container.dockerMonitorService.poll().catch(() => undefined);
     void pollDocker();
@@ -91,6 +101,7 @@ function startBackgroundJobs() {
 async function main() {
   await runMigrations();
   await container.monitoringService.syncManagedTargets();
+  await container.portScanService.failInterrupted();
   const interrupted = await container.devicesService.failInterruptedScans();
   if (interrupted > 0) logger.warn({ interrupted }, 'Marked interrupted discovery scans as failed');
 

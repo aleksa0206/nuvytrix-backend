@@ -83,12 +83,12 @@ Status: ⬜ nije počet · 🟨 u radu · ✅ gotovo · ⛔ čeka odobrenje
 
 ## Faza 6 – Bezbednost mreže
 
-### NVX-12 – Nmap skeniranje portova i servisa ⬜
+### NVX-12 – Nmap skeniranje portova i servisa ✅
 **Opis:** Ručno i zakazano skeniranje portova sa prepoznavanjem servisa i verzija, samo 192.168.100.0/24. Istorija po uređaju i poređenje sa prethodnim: nov port, zatvoren port, promena verzije. Bez agresivnih skripti.
 **Prihvatanje:** detalj uređaja prikazuje portove i istoriju; obaveštenje za nov otvoren port; skeniranje ne ometa mrežu (izmereno).
 **Zavisi od:** NVX-02
 
-### NVX-13 – Praćenje SSH prijava ⬜
+### NVX-13 – Praćenje SSH prijava ✅
 **Opis:** Čitanje `auth.log` hosta preko read-only mount-a. Uspešne i neuspele prijave, izvorne IP adrese, nova IP adresa, ponovljeni neuspesi. Bez promene SSH konfiguracije.
 **Prihvatanje:** ekran SSH sa istorijom; probna neuspela prijava vidljiva; obaveštenje za novu IP adresu i više neuspeha.
 **Zavisi od:** NVX-01

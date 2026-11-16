@@ -22,7 +22,9 @@ export type AlertKind =
   | 'container_unhealthy'
   | 'port_opened'
   | 'port_closed'
-  | 'service_changed';
+  | 'service_changed'
+  | 'ssh_new_source'
+  | 'ssh_failures';
 export type AlertSeverity = 'info' | 'warning' | 'error';
 
 interface AlertRow {

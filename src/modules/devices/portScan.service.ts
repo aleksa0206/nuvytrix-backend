@@ -159,7 +159,6 @@ export class PortScanService {
 
   /** Manual scan of one device or of every online device; audited. Returns the scan row. */
   async start(deviceId: number | null, adminId: number, context: RequestContext) {
-    if (this.running) throw new AppError(ErrorCode.SCAN_ALREADY_RUNNING, 409);
     const scan = await this.scan(deviceId, 'manual');
     await this.auditService.record({
       adminId,
@@ -173,6 +172,24 @@ export class PortScanService {
   }
 
   private async scan(deviceId: number | null, trigger: 'scheduled' | 'manual') {
+    if (this.running) throw new AppError(ErrorCode.SCAN_ALREADY_RUNNING, 409);
+    // Claimed synchronously, before the first await, so two requests cannot both start a scan.
+    let release!: () => void;
+    this.running = new Promise<void>((resolve) => (release = resolve));
+    try {
+      return await this.startScan(deviceId, trigger, release);
+    } catch (err) {
+      this.running = null;
+      release();
+      throw err;
+    }
+  }
+
+  private async startScan(
+    deviceId: number | null,
+    trigger: 'scheduled' | 'manual',
+    release: () => void
+  ) {
     const devices = await this.db('devices')
       .modify((q) => {
         if (deviceId !== null) q.where('id', deviceId);
@@ -190,10 +207,12 @@ export class PortScanService {
     const [scan] = await this.db('port_scans')
       .insert({ trigger, hosts: targets.length })
       .returning('*');
-    const work = this.run(scan.id, targets);
-    this.running = work.finally(() => {
-      this.running = null;
-    });
+    this.running = this.run(scan.id, targets)
+      .catch((err) => logger.warn({ err: (err as Error).message }, 'Port scan failed'))
+      .finally(() => {
+        this.running = null;
+        release();
+      });
     return scan;
   }
 
@@ -219,7 +238,13 @@ export class PortScanService {
       for (const device of devices) {
         const ports = results.get(device.ip_address);
         if (!ports) continue; // host did not answer this time: nothing is concluded
-        changes += await this.apply(device, ports);
+        changes += await this.apply(device, ports).catch((err) => {
+          logger.warn(
+            { err: (err as Error).message, ip: device.ip_address },
+            'Port scan result not stored'
+          );
+          return 0;
+        });
       }
       await this.db('port_scans')
         .where({ id: scanId })
@@ -261,8 +286,8 @@ export class PortScanService {
       await this.db('device_events').insert({
         device_id: device.id,
         kind,
-        old_value: (details.from as string) ?? null,
-        new_value: (details.to as string) ?? null,
+        old_value: clamp(details.from, 255),
+        new_value: clamp(details.to, 255),
         details: JSON.stringify(details),
       });
       if (!baseline)
@@ -340,6 +365,17 @@ export class PortScanService {
       lastSeenAt: r.last_seen_at,
       closedAt: r.closed_at,
     }));
+  }
+
+  /** Scans left 'running' by a restart of the API never finish; mark them failed. */
+  failInterrupted(): Promise<number> {
+    return this.db('port_scans')
+      .where({ status: 'running' })
+      .update({
+        status: 'failed',
+        error: 'Interrupted by a restart',
+        finished_at: this.db.fn.now(),
+      });
   }
 
   latestScans(limit = 10) {
