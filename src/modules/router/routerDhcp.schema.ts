@@ -4,7 +4,7 @@ import { ipToInt } from './routerFirewall.schema';
 const ipv4 = z.ipv4({ message: 'Must be an IPv4 address' });
 
 /** Accepts aa:bb:cc:dd:ee:ff or aa-bb-cc-dd-ee-ff in any case; stored lowercase with colons. */
-const mac = z
+export const macAddress = z
   .string()
   .trim()
   .regex(/^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$/, 'Use a MAC address like aa:bb:cc:dd:ee:ff')
@@ -15,7 +15,7 @@ const mac = z
     'Multicast MAC addresses are not allowed'
   );
 
-export const dhcpReservationSchema = z.object({ mac, ip: ipv4 });
+export const dhcpReservationSchema = z.object({ mac: macAddress, ip: ipv4 });
 
 /** The router accepts 1 s to 10 weeks; its form works in whole minutes. */
 const MAX_LEASE = 604800 * 10;

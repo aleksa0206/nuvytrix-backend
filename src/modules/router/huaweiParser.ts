@@ -438,3 +438,41 @@ export function parseDhcpReservations(page: string): DhcpReservation[] | null {
       mac: (r[3] ?? '').toLowerCase(),
     }));
 }
+
+export interface MacFilterEntry {
+  /** TR-098 path, which identifies the entry on the router. */
+  domain: string;
+  mac: string;
+  name: string;
+  /** Wi-Fi list only: the network the entry applies to, as the router names it (`SSID-1`). */
+  ssid?: string;
+}
+
+export interface MacFilterState {
+  enabled: boolean;
+  mode: 'blacklist' | 'whitelist' | 'unknown';
+  entries: MacFilterEntry[];
+}
+
+const MAC_MODES = { '0': 'blacklist', '1': 'whitelist' } as const;
+
+/**
+ * macfilter.asp (`stMacFilter(domain, MACAddress, DeviceAlias)`) and wlanmacfilter.asp
+ * (`stMacFilter(domain, SSIDName, DeviceName, MACAddress)`). Null when the page is not one of them.
+ */
+export function parseMacFilter(page: string, kind: 'lan' | 'wifi'): MacFilterState | null {
+  const enabled = parseStringVar(page, 'enableFilter');
+  const mode = parseStringVar(page, 'Mode');
+  if (enabled === null || mode === null || !page.includes('function stMacFilter')) return null;
+  return {
+    enabled: enabled === '1',
+    mode: MAC_MODES[mode as keyof typeof MAC_MODES] ?? 'unknown',
+    entries: parseConstructorCalls(page, 'stMacFilter')
+      .filter((r) => /MacFilter\.\d+$/i.test(r[0] ?? ''))
+      .map((r) =>
+        kind === 'lan'
+          ? { domain: r[0]!, mac: (r[1] ?? '').toLowerCase(), name: r[2] ?? '' }
+          : { domain: r[0]!, ssid: r[1] ?? '', name: r[2] ?? '', mac: (r[3] ?? '').toLowerCase() }
+      ),
+  };
+}

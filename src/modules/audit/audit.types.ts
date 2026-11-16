@@ -19,7 +19,11 @@ export type AuditAction =
   | 'router.dhcp_server_changed'
   | 'router.dhcp_reservation_created'
   | 'router.dhcp_reservation_updated'
-  | 'router.dhcp_reservation_deleted';
+  | 'router.dhcp_reservation_deleted'
+  | 'router.mac_filter_settings_changed'
+  | 'router.mac_filter_entry_created'
+  | 'router.mac_filter_entry_updated'
+  | 'router.mac_filter_entry_deleted';
 
 export interface AuditEntry {
   adminId: number | null;

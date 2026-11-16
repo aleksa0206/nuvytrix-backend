@@ -40,8 +40,8 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | IPv4 filtering: on / off | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ 2026-11-16 | |
 | IPv4 filtering: whitelist / hybrid mode | ✅ | ✅ | ✅ | ❌ refused | ❌ | ❌ | not built: a whitelist without matching rules cuts every device off; hybrid rule fields not verified |
 | IPv6 filtering | ❌ | — | — | — | — | ✅ (absence verified) | not in this firmware |
-| MAC filtering | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
-| Wi-Fi MAC filtering | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
+| MAC filtering: add / edit / delete, on / off (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → MAC filter | ✅ 2026-11-16 (script) | whitelist mode is shown, never edited; server and admin PC cannot be blocked |
+| Wi-Fi MAC filtering: per network, add / edit / delete, on / off (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → MAC filter | ✅ 2026-11-16 (script) | same limits as the MAC filter |
 | Parental control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | several pages, templates and schedules |
 | Precise device access control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | Device access control (Telnet/HTTP from LAN/Wi-Fi) | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | risk of locking out the web UI |
@@ -71,10 +71,10 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
   helps, and shown in Nuvytrix. Tested against the real router.
 - **Configuration parity:** read access exists for every page. The write mechanism (page-relative
   `add.cgi` / `set.cgi` / `del.cgi` with the page token) is verified on 2026-11-16 for the IPv4
-  filter, DHCP reservations and the main DHCP pool. Other forms use the same mechanism, but each
+  filter, DHCP reservations, the main DHCP pool and both MAC filters. Other forms use the same mechanism, but each
   still needs its own verification.
 - Write support will be added feature by feature, each only after its request format has been
-  verified on the router: IPv4 filter and DHCP are done; next MAC filters, port mapping, DMZ, port
+  verified on the router: IPv4 filter, DHCP and MAC filters are done; next port mapping, DMZ, port
   triggering, Wi-Fi and parental controls. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
 - Role-based authorization: Nuvytrix has a single administrator role today. Roles become relevant
   only with more users; writes would be limited to the administrator.

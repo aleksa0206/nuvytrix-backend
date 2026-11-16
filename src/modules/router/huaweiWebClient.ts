@@ -17,6 +17,8 @@ export const ALLOWED_PAGES = {
   ipFilter: '/html/bbsp/ipincoming/ipincoming.asp',
   dhcpServer: '/html/bbsp/dhcpservercfg/dhcp2.asp',
   dhcpStatic: '/html/bbsp/dhcpstatic/dhcpstatic.asp',
+  macFilter: '/html/bbsp/macfilter/macfilter.asp',
+  wifiMacFilter: '/html/bbsp/wlanmacfilter/wlanmacfilter.asp',
 } as const;
 
 export type RouterPage = keyof typeof ALLOWED_PAGES;
@@ -29,6 +31,8 @@ export const WRITABLE_PAGES = {
   ipFilter: ['add', 'set', 'del'],
   dhcpServer: ['set'],
   dhcpStatic: ['add', 'set', 'del'],
+  macFilter: ['add', 'set', 'del'],
+  wifiMacFilter: ['add', 'set', 'del'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;

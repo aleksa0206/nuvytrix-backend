@@ -13,6 +13,12 @@ import {
   ruleIndexSchema,
 } from './routerFirewall.schema';
 import { dhcpReservationSchema, dhcpServerSchema } from './routerDhcp.schema';
+import {
+  macFilterEntryParamsSchema,
+  macFilterEntrySchema,
+  macFilterListSchema,
+  macFilterSettingsSchema,
+} from './routerMacFilter.schema';
 
 const router = Router();
 router.use(requireAuth);
@@ -355,6 +361,135 @@ router.delete(
   validateParams(ruleIndexSchema),
   asyncHandler(async (req, res) => {
     const result = await container.routerDhcpService.deleteReservation(
+      res.locals.params.index,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/mac-filter:
+ *   get:
+ *     summary: LAN and Wi-Fi MAC filters and the active Wi-Fi networks, read from the router now
+ *     tags: [Router MAC filter]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Both lists and whether Nuvytrix may change them }
+ * /router/mac-filter/{list}:
+ *   patch:
+ *     summary: Turn a MAC filter on or off (blacklist mode only)
+ *     description: Refused while the list holds the server or admin PC. Read back; audited.
+ *     tags: [Router MAC filter]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: list, required: true, schema: { type: string, enum: [lan, wifi] } }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema: { type: object, required: [enabled], properties: { enabled: { type: boolean } } }
+ *     responses:
+ *       200: { description: New state of the list }
+ *       422: { description: Refused }
+ * /router/mac-filter/{list}/entries:
+ *   post:
+ *     summary: Add a MAC address to a blacklist
+ *     description: The device holding a protected address (server, admin PC) is refused.
+ *     tags: [Router MAC filter]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: list, required: true, schema: { type: string, enum: [lan, wifi] } }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [mac]
+ *             properties:
+ *               mac: { type: string }
+ *               name: { type: string }
+ *               ssid: { type: string, example: SSID-1, description: Wi-Fi list only }
+ *     responses:
+ *       201: { description: Entry as stored on the router }
+ * /router/mac-filter/{list}/entries/{index}:
+ *   put:
+ *     summary: Change an entry
+ *     tags: [Router MAC filter]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: list, required: true, schema: { type: string, enum: [lan, wifi] } }
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: Updated entry }
+ *       404: { description: No such entry on the router }
+ *   delete:
+ *     summary: Delete an entry; it is kept in the audit log
+ *     tags: [Router MAC filter]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: list, required: true, schema: { type: string, enum: [lan, wifi] } }
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: New state of the list }
+ */
+router.get(
+  '/mac-filter',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerMacFilterService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getState()) });
+  })
+);
+router.patch(
+  '/mac-filter/:list',
+  validateParams(macFilterListSchema),
+  validateBody(macFilterSettingsSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerMacFilterService.setEnabled(
+      res.locals.params.list,
+      req.body.enabled,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+router.post(
+  '/mac-filter/:list/entries',
+  validateParams(macFilterListSchema),
+  validateBody(macFilterEntrySchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerMacFilterService.addEntry(
+      res.locals.params.list,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result);
+  })
+);
+router.put(
+  '/mac-filter/:list/entries/:index',
+  validateParams(macFilterEntryParamsSchema),
+  validateBody(macFilterEntrySchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerMacFilterService.updateEntry(
+      res.locals.params.list,
+      res.locals.params.index,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result);
+  })
+);
+router.delete(
+  '/mac-filter/:list/entries/:index',
+  validateParams(macFilterEntryParamsSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerMacFilterService.deleteEntry(
+      res.locals.params.list,
       res.locals.params.index,
       req.admin!.adminId,
       requestContext(req)

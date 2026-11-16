@@ -22,6 +22,7 @@ import { RouterRepository } from '../modules/router/router.repository';
 import { RouterService } from '../modules/router/router.service';
 import { RouterDhcpService } from '../modules/router/routerDhcp.service';
 import { RouterFirewallService } from '../modules/router/routerFirewall.service';
+import { RouterMacFilterService } from '../modules/router/routerMacFilter.service';
 import { RouterWriter } from '../modules/router/routerWriter';
 import { HUAWEI_UPNP_DEFAULTS, UpnpClient } from '../modules/router/upnpClient';
 
@@ -60,6 +61,7 @@ class Container {
   public routerService: RouterService;
   public routerFirewallService: RouterFirewallService;
   public routerDhcpService: RouterDhcpService;
+  public routerMacFilterService: RouterMacFilterService;
 
   constructor(overrides: ContainerOverrides = {}) {
     this.auditRepository = new AuditRepository(db);
@@ -148,6 +150,9 @@ class Container {
       protectedAddresses: [env.ROUTER_HOST, ...env.ROUTER_PROTECTED_ADDRESSES].filter(Boolean),
     });
     this.routerDhcpService = new RouterDhcpService(routerWriter, {
+      protectedAddresses: env.ROUTER_PROTECTED_ADDRESSES,
+    });
+    this.routerMacFilterService = new RouterMacFilterService(routerWriter, {
       protectedAddresses: env.ROUTER_PROTECTED_ADDRESSES,
     });
 
