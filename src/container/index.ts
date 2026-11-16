@@ -34,6 +34,7 @@ import { RouterWifiScheduleService } from '../modules/router/routerWifiSchedule.
 import { RouterWifiRadioService } from '../modules/router/routerWifiRadio.service';
 import { RouterLedService } from '../modules/router/routerLed.service';
 import { RouterDiagnosticsService } from '../modules/router/routerDiagnostics.service';
+import { RouterAccessService } from '../modules/router/routerAccess.service';
 import { RouterWriter } from '../modules/router/routerWriter';
 import { HUAWEI_UPNP_DEFAULTS, UpnpClient } from '../modules/router/upnpClient';
 
@@ -85,6 +86,7 @@ class Container {
   public routerWifiRadioService: RouterWifiRadioService;
   public routerLedService: RouterLedService;
   public routerDiagnosticsService: RouterDiagnosticsService;
+  public routerAccessService: RouterAccessService;
 
   constructor(overrides: ContainerOverrides = {}) {
     this.auditRepository = new AuditRepository(db);
@@ -190,6 +192,9 @@ class Container {
       routerWriter,
       overrides.routerDiagnosticsTiming
     );
+    this.routerAccessService = new RouterAccessService(routerWriter, {
+      protectedAddresses: env.ROUTER_PROTECTED_ADDRESSES,
+    });
     this.routerParentalService = new RouterParentalService(routerWriter, {
       protectedAddresses: env.ROUTER_PROTECTED_ADDRESSES,
     });

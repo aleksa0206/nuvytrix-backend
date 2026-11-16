@@ -43,6 +43,7 @@ export const ALLOWED_PAGES = {
   pingResult: '/html/bbsp/maintenance/GetPingResult.asp',
   traceResult: '/html/bbsp/maintenance/GetRouteResult.asp',
   userLog: '/html/ssmp/userlog/normallogview.asp',
+  deviceAccess: '/html/bbsp/acl/aclsmart.asp',
   // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
   wanList: '/html/bbsp/common/wan_list.asp',
 } as const;
@@ -73,6 +74,7 @@ export const WRITABLE_PAGES = {
   led: ['set'],
   // Starts a ping or traceroute; changes no setting.
   diagnostics: ['complex'],
+  deviceAccess: ['set'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;

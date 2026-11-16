@@ -26,6 +26,7 @@ import { wifiScheduleSchema } from './routerWifiSchedule.service';
 import { CHANNELS, POWER_LEVELS, wifiRadioSchema } from './routerWifiRadio.service';
 import { ledSchema } from './routerLed.service';
 import { diagnosticsSchema } from './routerDiagnostics.service';
+import { deviceAccessSchema } from './routerAccess.service';
 import {
   parentalDeviceParams,
   parentalDeviceSchema,
@@ -1396,6 +1397,46 @@ router.get(
   '/user-log',
   asyncHandler(async (_req, res) => {
     res.json({ entries: await container.routerDiagnosticsService.userLog() });
+  })
+);
+
+/**
+ * @swagger
+ * /router/device-access:
+ *   get:
+ *     summary: Whether devices on Wi-Fi may open the router's web interface
+ *     tags: [Router security]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: "{ writesEnabled, httpFromWifi }" }
+ *   put:
+ *     summary: Allow or block the router's web interface from Wi-Fi ({ httpFromWifi })
+ *     description: >
+ *       Blocking is refused (422) unless the server and admin PC are seen by the router on a cable.
+ *       Access from wired devices is not affected. Audited.
+ *     tags: [Router security]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: "{ httpFromWifi }" }
+ *       422: { description: Refused to protect access or the router did not take the change }
+ */
+router.get(
+  '/device-access',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerAccessService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getState()) });
+  })
+);
+router.put(
+  '/device-access',
+  validateBody(deviceAccessSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerAccessService.change(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
   })
 );
 

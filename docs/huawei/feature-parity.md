@@ -43,8 +43,8 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | MAC filtering: add / edit / delete, on / off (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → MAC filter | ✅ 2026-11-16: script, then through Nuvytrix (add, rename, on, off, delete; server refused) | whitelist mode is shown, never edited; server and admin PC cannot be blocked |
 | Wi-Fi MAC filtering: per network, add / edit / delete, on / off (blacklist) | ✅ | ✅ | ✅ | ✅ | ✅ Router → MAC filter | ✅ 2026-11-16: script, then through Nuvytrix on the 5 GHz network (add, on, off, delete) | same limits as the MAC filter |
 | Parental control: templates (time limits, site lists, block or allow), devices | ✅ | ✅ | ✅ | ✅ | ✅ Router → Parental control | ✅ 2026-11-16: script, then through Nuvytrix with a fake device | server, admin PC and "all devices" cannot be bound; validity dates not offered |
-| Precise device access control | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
-| Device access control (Telnet/HTTP from LAN/Wi-Fi) | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | risk of locking out the web UI |
+| Precise device access control | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | not offered: one ISP rule (TELNET, HTTP, SSH, …), changing it risks the provider's access; see device-access-control.md |
+| Device access control: router web interface from Wi-Fi | ✅ | ✅ | ✅ | ✅ | ✅ Router → Firewall & UPnP | ✅ 2026-11-16: through Nuvytrix (block, then allow) | only HTTP from Wi-Fi is offered to this account; blocking refused unless server and admin PC are wired |
 | DMZ: set host, on / off, remove | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding & DMZ | ✅ 2026-11-16: script, then through Nuvytrix (server refused; set off, on, off, remove) | server and admin PC cannot be the DMZ host |
 | IPv4 port mapping: add / edit / delete, on / off | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding | ✅ 2026-11-16: script, then through Nuvytrix (router as target refused; add off, edit to UDP range, on, off, delete) | one port range per mapping is edited here; mappings with several ranges can only be deleted |
 | Port trigger: add / edit / delete | ✅ | ✅ | ✅ | ✅ | ✅ Router → Port forwarding & DMZ | ✅ 2026-11-16: script, then through Nuvytrix (add off, edit on, delete) | |
