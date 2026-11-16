@@ -70,6 +70,18 @@ describe('ssh monitoring', () => {
     expect(body.sources[0]).toMatchObject({ ip: '203.0.113.9', kind: 'internet', failed: 6 });
   });
 
+  it('counts failed key logins with a key suffix, and unparseable failures without an address', () => {
+    const text =
+      `${ts(1)} aleksa sshd[11]: Failed publickey for root from 203.0.113.5 port 22 ssh2: RSA SHA256:abc
+` +
+      `${ts(1)} aleksa sshd[12]: Failed password for root from not-an-ip port 22 ssh2
+`;
+    expect(parseAuthLog(text).map((e) => [e.kind, e.sourceIp])).toEqual([
+      ['failed', '203.0.113.5'],
+      ['failed', null],
+    ]);
+  });
+
   it('takes the last "from <ip>" so a crafted username cannot fake the source', () => {
     const crafted =
       `${ts(1)} aleksa sshd[9]: Invalid user x from 10.0.0.1 port 1 from 203.0.113.50 port 4242\n` +

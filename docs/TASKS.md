@@ -97,13 +97,13 @@ Status: ⬜ nije počet · 🟨 u radu · ✅ gotovo · ⛔ čeka odobrenje
 
 ## Faza 7 – AdGuard Home
 
-### NVX-14 – Deploy AdGuard Home ⬜
+### NVX-14 – Deploy AdGuard Home ✅
 **Opis:** Proveriti port 53 i `systemd-resolved`. AdGuard u Docker-u, vezan samo za 192.168.100.27 i Tailscale adresu, trajni podaci, health check, automatski restart. Admin interfejs samo sa LAN-a i Tailscale-a.
 **Prihvatanje:** `dig @192.168.100.27` radi; sajtovi i Nuvytrix rade; port 53 nije otvoren ka internetu.
 **Rizik:** srednji (port 53 na serveru).
 **Zavisi od:** NVX-01
 
-### NVX-15 – Integracija AdGuard-a u Nuvytrix ⬜
+### NVX-15 – Integracija AdGuard-a u Nuvytrix ✅
 **Opis:** Upiti, blokirani zahtevi, top domeni i top blokirani, statistika po klijentu povezana sa uređajima, allowlist, blocklist, sopstvena pravila, stanje upstream servera i vreme odgovora.
 **Prihvatanje:** vrednosti se poklapaju sa AdGuard UI-jem; izmene lista rade i upisuju se u audit.
 **Zavisi od:** NVX-14

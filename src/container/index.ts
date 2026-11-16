@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import { ownIpv4Addresses } from '../common/utils/ownAddresses';
 import { db } from '../config/db';
 import { env } from '../config/env';
@@ -208,7 +209,21 @@ class Container {
           url: env.ADGUARD_URL,
           username: env.ADGUARD_USERNAME,
           password: env.ADGUARD_PASSWORD,
-        })
+        }),
+      this.auditService,
+      // Show DNS clients by the name the device has in Nuvytrix.
+      async (ips) => {
+        const valid = ips.filter((ip) => isIP(ip) !== 0);
+        if (valid.length === 0) return new Map();
+        const rows = await db('devices')
+          .whereRaw('host(ip_address) = ANY(?)', [valid])
+          .select(db.raw('host(ip_address) AS ip'), 'custom_name', 'hostname');
+        return new Map(
+          rows
+            .filter((r) => r.custom_name || r.hostname)
+            .map((r) => [String(r.ip), String(r.custom_name ?? r.hostname)])
+        );
+      }
     );
 
     this.routerRepository = new RouterRepository(db);

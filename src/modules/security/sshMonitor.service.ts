@@ -28,7 +28,7 @@ const BASELINE_KEY = 'ssh_baseline_done';
 // "from <ip> port <n>" win: a username containing "from 1.2.3.4 port 1" cannot fake the source.
 const PREFIX = /^(\S+)\s+\S+\s+sshd\[(\d+)\]:\s+(.*)$/;
 const ACCEPTED = /^Accepted (\S+) for (\S+) from (\S+) port \d+ ssh2(?:: .*)?$/;
-const FAILED = /^Failed (\S+) for (?:invalid user )?(.*) from (\S+) port \d+ ssh2$/;
+const FAILED = /^Failed (\S+) for (?:invalid user )?(.*) from (\S+) port \d+ ssh2(?:: .*)?$/;
 const INVALID = /^Invalid user (.*) from (\S+) port \d+$/;
 
 /** sshd lines of a syslog file with ISO timestamps (Ubuntu's rsyslog default). */
@@ -69,6 +69,16 @@ export function parseAuthLog(text: string): SshEvent[] {
         method: null,
         username: m[1] || null,
         sourceIp: m[2]!,
+      });
+    } else if (/^(Failed |Invalid user )/.test(message)) {
+      // Unparseable but clearly a failure: counted, without a source address.
+      events.push({
+        loggedAt,
+        pid,
+        kind: message.startsWith('Failed') ? 'failed' : 'invalid_user',
+        method: null,
+        username: null,
+        sourceIp: null,
       });
     }
   }
