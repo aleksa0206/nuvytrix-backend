@@ -1,8 +1,8 @@
 # Firewall management (IPv4 filtering)
 
 Analysis of how the router's own page `html/bbsp/ipincoming/ipincoming.asp` reads and writes the
-IPv4 filter. Everything below comes from reading the page's JavaScript; **no write request was sent
-during the research**.
+IPv4 filter. The request formats come from the page's JavaScript; add and delete were then
+verified on the real router on 2026-11-16 (see "Verification").
 
 ## Read (implemented)
 
@@ -20,22 +20,27 @@ IPv6 filtering: this firmware's menu has no IPv6 filter page, and no IPv6 filter
 in any crawled page. It is **UNSUPPORTED** here; IPv6 traffic is governed only by the router's
 built-in firewall level.
 
-## Write requests (documented, not executed)
+## Write requests
 
 All writes are `POST` with `application/x-www-form-urlencoded` bodies, the session cookie, and the
 page's anti-CSRF token `x.X_HW_Token`. The token is the value of the hidden input `onttoken` on the
 page that was loaded. The router answers by re-rendering `RequestFile`.
 
+**The `*.cgi` paths are relative to the page directory**, because the page builds the form with
+`setAction('add.cgi?...')`. The real URLs are `/html/bbsp/ipincoming/add.cgi`, `.../set.cgi` and
+`.../del.cgi`. A first test that posted to `/add.cgi` at the root got no answer at all and changed
+nothing. The browser also sends `Referer` and `Origin` for the page; Nuvytrix sends the same.
+
 ### Enable or disable filtering
 ```
-POST /set.cgi?x=InternetGatewayDevice.X_HW_Security&RequestFile=html/bbsp/ipincoming/ipincoming.asp
+POST /html/bbsp/ipincoming/set.cgi?x=InternetGatewayDevice.X_HW_Security&RequestFile=html/bbsp/ipincoming/ipincoming.asp
 x.IpFilterInRight=1|0
 x.X_HW_Token=<onttoken>
 ```
 
 ### Change mode
 ```
-POST /set.cgi?x=InternetGatewayDevice.X_HW_Security&RequestFile=html/bbsp/ipincoming/ipincoming.asp
+POST /html/bbsp/ipincoming/set.cgi?x=InternetGatewayDevice.X_HW_Security&RequestFile=html/bbsp/ipincoming/ipincoming.asp
 x.IpFilterInPolicy=0|1|2          (blacklist | whitelist | hybrid)
 x.X_HW_Token=<onttoken>
 ```
@@ -44,9 +49,9 @@ rule blocks all traffic**, including access to the router itself from the LAN.
 
 ### Add a rule
 ```
-POST /add.cgi?x=InternetGatewayDevice.X_HW_Security.IpFilterIn&RequestFile=html/bbsp/ipincoming/ipincoming.asp
-x.Protocol=<ALL|TCP|UDP|TCP/UDP|ICMP>     exact option values: see "Open questions"
-x.Direction=Upstream|Downstream|Bidirectional
+POST /html/bbsp/ipincoming/add.cgi?x=InternetGatewayDevice.X_HW_Security.IpFilterIn&RequestFile=html/bbsp/ipincoming/ipincoming.asp
+x.Protocol=ALL|TCP/UDP|TCP|UDP|ICMP
+x.Direction=Upstream|Downstream|Bidirectional   (ALL only allows Bidirectional in the UI)
 x.Name=<rule name>
 x.SourceIPStart, x.SourceIPEnd           IPv4, end optional, start <= end
 x.DestIPStart,   x.DestIPEnd             IPv4, end optional, start <= end
@@ -61,7 +66,7 @@ Same fields, posted to `set.cgi?x=<rule Domain, e.g. InternetGatewayDevice.X_HW_
 
 ### Delete rules
 ```
-POST /del.cgi?RequestFile=html/bbsp/ipincoming/ipincoming.asp
+POST /html/bbsp/ipincoming/del.cgi?RequestFile=html/bbsp/ipincoming/ipincoming.asp
 <rule Domain>=            one empty-valued field per rule to delete
 x.X_HW_Token=<onttoken>
 ```
@@ -78,17 +83,28 @@ x.X_HW_Token=<onttoken>
 The router's server-side validation is unknown. Nuvytrix must validate everything itself and
 treat any router response other than the re-rendered page as a failure.
 
-## Open questions before enabling writes
+## Verification on the router (2026-11-16)
 
-1. Exact `x.Protocol` option values and `x.Action` values in hybrid mode. They are built at runtime
-   from language tables, and the page source alone is not conclusive.
-2. How the router reports a rejected write (error page, alert script, or silently ignored).
-3. Whether a write takes effect immediately or needs the page to be reloaded.
-4. Whether the ISP's TR-069 provisioning overwrites user filter rules.
+Test rule: name `NuvytrixTest`, protocol ALL, Bidirectional, LAN-side address 192.168.100.250
+(unused). Blacklist mode, no other rules.
 
-These can only be answered by one supervised test on the real router: add a harmless blacklist
-rule (for example deny TCP to an unused LAN address such as 192.168.100.250), read the list back,
-then delete it and read again, with the administrator watching.
+1. **Router UI in a browser:** add and delete through the router's own page; the exact requests
+   were captured. Add body:
+   `x.Protocol=ALL&x.Direction=Bidirectional&x.Name=NuvytrixTest&x.SourceIPStart=192.168.100.250&x.SourceIPEnd=&x.DestIPStart=&x.DestIPEnd=&x.LanSideTcpPort=&x.LanSideUdpPort=&x.WanSideTcpPort=&x.WanSideUdpPort=&x.X_HW_Token=<token>`.
+   Delete body: `InternetGatewayDevice.X_HW_Security.IpFilterIn.1=&x.X_HW_Token=<token>`.
+2. **From the server, without a browser:** the same add and delete sent by script. Both returned
+   HTTP 200 with the re-rendered page, the rule appeared as `IpFilterIn.1` and was gone after the
+   delete. The router ended in its original state (filter on, blacklist, 0 rules).
+
+Answers:
+- Writes take effect immediately; the re-rendered page already shows the new rule.
+- The response is always the re-rendered page, so success is decided by reading the list back.
+- An earlier script attempt with `Protocol=TCP, Direction=Downstream` and no ports got no HTTP
+  answer at all (nothing was created). TCP/UDP rules with ports still need their own verification.
+- The router allows **one web session at a time**. A login while another session is open (for
+  example the router UI in a browser) fails, so Nuvytrix logs out after every operation.
+- Still open: hybrid-mode `x.Action` values, `set.cgi` edits and mode changes (not yet tested),
+  and whether TR-069 provisioning overwrites user rules.
 
 ## Safety design for write support (not yet enabled)
 

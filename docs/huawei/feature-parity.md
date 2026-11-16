@@ -36,7 +36,8 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | DHCP static IP | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | good next candidate |
 | DHCPv6 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | |
 | IPv4 filtering: view state and rules | ✅ | ✅ | — | ✅ | ✅ Router → Firewall | ✅ | |
-| IPv4 filtering: add / edit / delete / enable / mode | ✅ | — | ✅ (documented) | ❌ | ❌ | ❌ supervised test pending | see firewall-management.md |
+| IPv4 filtering: add / delete | ✅ | — | ✅ verified | ⏳ | ❌ | ✅ add + delete (protocol ALL) | see firewall-management.md |
+| IPv4 filtering: edit / enable / mode / TCP-UDP rules with ports | ✅ | — | ✅ (documented) | ⏳ | ❌ | ❌ | not yet verified |
 | IPv6 filtering | ❌ | — | — | — | — | ✅ (absence verified) | not in this firmware |
 | MAC filtering | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
 | Wi-Fi MAC filtering | ✅ | ✅ | ✅ | ⏳ | ❌ | ❌ | |
@@ -67,10 +68,10 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 
 - **Monitoring parity:** every status page with operational value is read, stored where history
   helps, and shown in Nuvytrix. Tested against the real router.
-- **Configuration parity:** read access exists for every page. Write access is documented for the
-  IPv4 filter but not enabled. A first supervised write test sent the add request to the wrong
-  path (`/add.cgi` instead of the page-relative `/html/bbsp/ipincoming/add.cgi`); the router did not
-  answer and nothing changed. The corrected test has not been run yet.
+- **Configuration parity:** read access exists for every page. The write mechanism (page-relative
+  `add.cgi` / `del.cgi` with the page token) was verified on 2026-11-16 by adding and deleting an IPv4
+  filter rule, both from the router UI and from the server. Other forms use the same mechanism, but
+  each still needs its own verification.
 - Write support will be added feature by feature, each only after its request format has been
   verified on the router: first IPv4 filter, then DHCP reservations, MAC filters, port mapping, DMZ
   and UPnP. WAN, account, ONT authentication and reboot stay out of scope unless explicitly asked.
