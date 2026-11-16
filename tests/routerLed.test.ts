@@ -64,17 +64,17 @@ describe('router LED', () => {
     const agent = await signedInAgent();
 
     const read = await agent.get('/api/router/led');
-    const off = await agent.put('/api/router/led').send({ mode: 'offAfterDelay' });
+    const off = await agent.put('/api/router/led').send({ mode: 'off' });
     const on = await agent.put('/api/router/led').send({ mode: 'on' });
 
     expect(read.body).toEqual({ writesEnabled: true, mode: 'on' });
-    expect(off.body).toEqual({ mode: 'offAfterDelay' });
+    expect(off.body).toEqual({ mode: 'off' });
     expect(on.body).toEqual({ mode: 'on' });
     expect(router.submissions[0]).toMatchObject({
       page: 'led',
       action: 'set',
       object: 'InternetGatewayDevice.X_HW_SSMPPDT.Deviceinfo',
-      fields: { 'x.X_HW_LedSwitch': '2' },
+      fields: { 'x.X_HW_LedSwitch': '1' },
     });
     const audit = await db('audit_logs').where({ action: 'router.led_changed' }).first();
     expect(audit.details.outcome).toBe('applied');

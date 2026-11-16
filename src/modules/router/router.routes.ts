@@ -1326,7 +1326,7 @@ router.put(
  * @swagger
  * /router/led:
  *   get:
- *     summary: The router's indicator lights mode (on, off, offAfterDelay), read now
+ *     summary: The router's indicator lights (on or off), read now
  *     tags: [Router maintenance]
  *     security: [{ cookieAuth: [] }]
  *     responses:

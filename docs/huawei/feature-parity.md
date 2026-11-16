@@ -60,11 +60,11 @@ Legend: ✅ yes · ⚠️ partial · ❌ no · ⏳ discovered, not yet built · 
 | Wi-Fi channel width, WPS, coverage (mesh) | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | |
 | Account management | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | not planned: changing the router password from another app is a lockout risk |
 | ONT authentication | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | not planned: ISP registration data |
-| Configuration file backup | ✅ | download | upload restore | ❌ | ❌ | ❌ | contains secrets; would need encrypted storage |
+| Configuration file backup | ✅ (provider account) | ❌ for this account | — | ❌ | ❌ | ✅ absence verified 2026-11-16 | cfgfileroot.asp offers only "save" and "save and reboot" to the admin account; no download |
 | Maintenance (ping, traceroute, nslookup) | ✅ | results | starts with a write | ❌ | ❌ | ❌ | Nuvytrix can run these from the server instead |
 | User log | ✅ | ⚠️ via download CGI | — | ❌ | ❌ | ❌ | |
 | Firewall log | ✅ | ✅ | log rules writable | ✅ automatic import | ✅ Firewall events | ✅ | rolling buffer, read every 15 min |
-| Indicator (LED) | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | low value |
+| Indicator (LED): on / off | ✅ | ✅ | ✅ | ✅ | ✅ Router → Status | ✅ 2026-11-16 through Nuvytrix (off, on) | "off after a delay" (value 2) is not accepted by this model; LED off-time periods not offered |
 | Reboot | ✅ | — | ✅ | ❌ | ❌ | ❌ | not planned without explicit request |
 | Bundle information | ✅ | ✅ | — | ❌ | ❌ | ❌ | |
 

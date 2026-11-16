@@ -5,11 +5,14 @@ import type { RequestContext } from '../auth/auth.types';
 import { parseStringVar } from './huaweiParser';
 import type { RouterWriter } from './routerWriter';
 
-/** The router's LED modes: on; off (with optional off-time periods); off after a short delay. */
-const MODES = { on: '0', off: '1', offAfterDelay: '2' } as const;
+/**
+ * The router's LED modes: on, or off. The page also knows `2` (off after a short delay); this model
+ * does not accept it (verified 2026-11-16), so it is not offered.
+ */
+const MODES = { on: '0', off: '1' } as const;
 export type LedMode = keyof typeof MODES;
 
-export const ledSchema = z.object({ mode: z.enum(['on', 'off', 'offAfterDelay']) });
+export const ledSchema = z.object({ mode: z.enum(['on', 'off']) });
 
 /**
  * The router's indicator lights (Maintenance → Indicator Status): `X_HW_LedSwitch` on

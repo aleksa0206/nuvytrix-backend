@@ -41,6 +41,6 @@ export const ErrorMessages: Record<ErrorCode, string> = {
     'Changing router settings is turned off (ROUTER_WRITES_ENABLED on the server)',
   [ErrorCode.ROUTER_WRITE_REFUSED]: 'This change is not allowed',
   [ErrorCode.ROUTER_WRITE_NOT_APPLIED]:
-    'The router did not show the change after saving. Check the rules on the router.',
+    'The router did not take the change: after saving it still shows the old setting. The setting may not be supported on this router.',
   [ErrorCode.ROUTER_RULE_NOT_FOUND]: 'This entry no longer exists on the router',
 };
