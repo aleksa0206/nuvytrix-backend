@@ -174,12 +174,9 @@ export class DeviceIntelService {
               );
             }
           }
-          if (hostname && existing.hostname && hostname !== existing.hostname) {
-            await this.recordEvent(trx, deviceId, 'hostname_changed', existing.hostname, hostname, {
-              source: 'router',
-            });
-          }
-          if (hostname) changes.hostname = hostname;
+          // The router's DHCP name and nmap's reverse-DNS name differ (aleksa vs aleksa.local);
+          // hostname changes are tracked from scans only, the router just fills a missing name.
+          if (hostname && !existing.hostname) changes.hostname = hostname;
           await trx('devices').where({ id: deviceId }).update(changes);
         }
         await trx('device_presence').insert({ device_id: deviceId, online: d.online });
