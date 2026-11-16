@@ -48,7 +48,7 @@ Swagger UI is at `/api-docs`.
 
 ## What it can and can't do on my network
 
-My setup is a Huawei OptiXstar HN8546X6 router at `192.168.100.1`, an unmanaged TP-Link TL-SG1005D switch and a CGNAT IPv4 address from the ISP. That limits a few things, and the app says so instead of faking data.
+My setup is a Huawei OptiXstar HN8546X6 router at `192.168.100.1`, an unmanaged TP-Link TL-SG1008D switch and a CGNAT IPv4 address from the ISP. That limits a few things, and the app says so instead of faking data.
 
 | Feature | Status |
 | --- | --- |

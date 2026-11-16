@@ -169,7 +169,7 @@ export class OverviewService {
       capability(
         'Per-device traffic and bandwidth',
         'requires_hardware',
-        'The TP-Link TL-SG1005D is unmanaged: no port mirroring or SNMP. Needs a managed switch with mirroring, a gateway that exports flow data, or a dedicated sensor.'
+        'The TP-Link TL-SG1008D is unmanaged: no port mirroring or SNMP. Needs a managed switch with mirroring, a gateway that exports flow data, or a dedicated sensor.'
       ),
       capability(
         'Remote access',
