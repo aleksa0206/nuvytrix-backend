@@ -3,9 +3,15 @@ import { z } from 'zod';
 import { ConflictError } from '../../common/errors/AppError';
 import { ErrorCode } from '../../common/errors/errorCodes';
 import { requireAuth } from '../../common/middleware/auth';
-import { validateQuery } from '../../common/middleware/validate';
+import { validateBody, validateParams, validateQuery } from '../../common/middleware/validate';
+import { requestContext } from '../../common/utils/requestContext';
 import { asyncHandler } from '../../common/utils/asyncHandler';
 import { container } from '../../container';
+import {
+  ipFilterRuleSchema,
+  ipFilterSettingsSchema,
+  ruleIndexSchema,
+} from './routerFirewall.schema';
 
 const router = Router();
 router.use(requireAuth);
@@ -95,6 +101,138 @@ router.post(
     if (container.routerService.isPolling) throw new ConflictError(ErrorCode.ROUTER_POLL_RUNNING);
     await container.routerService.poll();
     res.json(container.routerService.getStatus());
+  })
+);
+
+/**
+ * @swagger
+ * /router/firewall:
+ *   get:
+ *     summary: IPv4 filter read from the router now, and whether Nuvytrix may change it
+ *     tags: [Router firewall]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Filter state }
+ *       503: { description: Router not configured or not reachable }
+ *   patch:
+ *     summary: Turn the IPv4 filter on or off, or set blacklist mode
+ *     description: Read back after saving; 502 if the router does not show the change. Audited.
+ *     tags: [Router firewall]
+ *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               enabled: { type: boolean }
+ *               mode: { type: string, enum: [blacklist] }
+ *     responses:
+ *       200: { description: New state }
+ *       403: { description: ROUTER_WRITES_ENABLED is off }
+ *       422: { description: Refused (not blacklist mode) }
+ *       502: { description: The router did not apply the change }
+ * /router/firewall/rules:
+ *   post:
+ *     summary: Add an IPv4 filter rule on the router (blacklist mode)
+ *     description: >
+ *       Refused when the LAN range covers the router or a protected address, or when the same rule
+ *       or name exists. Read back after saving. Audited.
+ *     tags: [Router firewall]
+ *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, protocol]
+ *             properties:
+ *               name: { type: string }
+ *               protocol: { type: string, enum: [ALL, TCP/UDP, TCP, UDP, ICMP] }
+ *               lanIpStart: { type: string }
+ *               lanIpEnd: { type: string }
+ *               wanIpStart: { type: string }
+ *               wanIpEnd: { type: string }
+ *               lanTcpPorts: { type: string, example: '80,443,8000:8080' }
+ *               lanUdpPorts: { type: string }
+ *               wanTcpPorts: { type: string }
+ *               wanUdpPorts: { type: string }
+ *     responses:
+ *       201: { description: Rule as stored on the router }
+ * /router/firewall/rules/{index}:
+ *   put:
+ *     summary: Replace an IPv4 filter rule (index from the rule's domain, IpFilterIn.{index})
+ *     tags: [Router firewall]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: Updated rule }
+ *       404: { description: No such rule on the router }
+ *   delete:
+ *     summary: Delete an IPv4 filter rule; the deleted rule is kept in the audit log
+ *     tags: [Router firewall]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: New state }
+ */
+router.get(
+  '/firewall',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerFirewallService;
+    res.json({ writesEnabled: service.writesEnabled, ...(await service.getState()) });
+  })
+);
+router.patch(
+  '/firewall',
+  validateBody(ipFilterSettingsSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerFirewallService.changeSettings(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+router.post(
+  '/firewall/rules',
+  validateBody(ipFilterRuleSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerFirewallService.addRule(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json(result);
+  })
+);
+router.put(
+  '/firewall/rules/:index',
+  validateParams(ruleIndexSchema),
+  validateBody(ipFilterRuleSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerFirewallService.updateRule(
+      res.locals.params.index,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result);
+  })
+);
+router.delete(
+  '/firewall/rules/:index',
+  validateParams(ruleIndexSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerFirewallService.deleteRule(
+      res.locals.params.index,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
   })
 );
 

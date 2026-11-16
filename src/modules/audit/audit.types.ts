@@ -11,7 +11,11 @@ export type AuditAction =
   | 'firewall.policy_deleted'
   | 'monitoring.target_created'
   | 'monitoring.target_updated'
-  | 'monitoring.target_deleted';
+  | 'monitoring.target_deleted'
+  | 'router.firewall_rule_created'
+  | 'router.firewall_rule_updated'
+  | 'router.firewall_rule_deleted'
+  | 'router.firewall_settings_changed';
 
 export interface AuditEntry {
   adminId: number | null;

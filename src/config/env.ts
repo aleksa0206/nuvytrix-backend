@@ -69,6 +69,20 @@ const envSchema = z.object({
   // Router web UI account; the router integration is off while either is empty.
   ROUTER_USERNAME: z.string().default(''),
   ROUTER_PASSWORD: z.string().default(''),
+  ROUTER_WRITES_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  ROUTER_PROTECTED_ADDRESSES: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+    )
+    .pipe(z.array(z.ipv4())),
   ROUTER_POLL_SECONDS: z.coerce.number().int().min(60).default(300),
   ROUTER_FIREWALL_LOG_POLL_MINUTES: z.coerce.number().int().min(0).default(15),
   FIREWALL_UPLOAD_MAX_MB: z.coerce.number().positive().max(200).default(20),

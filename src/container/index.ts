@@ -20,6 +20,7 @@ import { OverviewService } from '../modules/overview/overview.service';
 import { HuaweiWebClient } from '../modules/router/huaweiWebClient';
 import { RouterRepository } from '../modules/router/router.repository';
 import { RouterService } from '../modules/router/router.service';
+import { RouterFirewallService } from '../modules/router/routerFirewall.service';
 import { HUAWEI_UPNP_DEFAULTS, UpnpClient } from '../modules/router/upnpClient';
 
 export interface ContainerOverrides {
@@ -27,6 +28,7 @@ export interface ContainerOverrides {
   prober?: Prober;
   adguardClient?: AdGuardClient;
   routerWebClient?: HuaweiWebClient;
+  routerWritesEnabled?: boolean;
   upnpClient?: UpnpClient;
 }
 
@@ -54,6 +56,7 @@ class Container {
 
   public routerRepository: RouterRepository;
   public routerService: RouterService;
+  public routerFirewallService: RouterFirewallService;
 
   constructor(overrides: ContainerOverrides = {}) {
     this.auditRepository = new AuditRepository(db);
@@ -111,13 +114,15 @@ class Container {
     );
 
     this.routerRepository = new RouterRepository(db);
-    this.routerService = new RouterService(
+    const routerWebClient =
       overrides.routerWebClient ??
-        new HuaweiWebClient({
-          baseUrl: 'http://' + env.ROUTER_HOST,
-          username: env.ROUTER_USERNAME,
-          password: env.ROUTER_PASSWORD,
-        }),
+      new HuaweiWebClient({
+        baseUrl: 'http://' + env.ROUTER_HOST,
+        username: env.ROUTER_USERNAME,
+        password: env.ROUTER_PASSWORD,
+      });
+    this.routerService = new RouterService(
+      routerWebClient,
       overrides.upnpClient ??
         new UpnpClient({
           baseUrl: 'http://' + env.ROUTER_HOST + ':' + HUAWEI_UPNP_DEFAULTS.port,
@@ -131,6 +136,15 @@ class Container {
         host: env.ROUTER_HOST,
         pollSeconds: env.ROUTER_POLL_SECONDS,
         retentionDays: env.MONITORING_RETENTION_DAYS,
+      }
+    );
+    this.routerFirewallService = new RouterFirewallService(
+      routerWebClient,
+      this.routerService,
+      this.auditService,
+      {
+        writesEnabled: overrides.routerWritesEnabled ?? env.ROUTER_WRITES_ENABLED,
+        protectedAddresses: [env.ROUTER_HOST, ...env.ROUTER_PROTECTED_ADDRESSES].filter(Boolean),
       }
     );
 

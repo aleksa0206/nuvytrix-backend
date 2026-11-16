@@ -36,4 +36,11 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   [ErrorCode.ROUTER_NOT_CONFIGURED]: 'Router access is not configured',
   [ErrorCode.ROUTER_NO_DATA]: 'The router has not been read yet',
   [ErrorCode.ROUTER_POLL_RUNNING]: 'The router is being read right now',
+  [ErrorCode.ROUTER_UNAVAILABLE]: 'The router could not be reached',
+  [ErrorCode.ROUTER_WRITES_DISABLED]:
+    'Changing router settings is turned off (ROUTER_WRITES_ENABLED on the server)',
+  [ErrorCode.ROUTER_WRITE_REFUSED]: 'This change is not allowed',
+  [ErrorCode.ROUTER_WRITE_NOT_APPLIED]:
+    'The router did not show the change after saving. Check the rules on the router.',
+  [ErrorCode.ROUTER_RULE_NOT_FOUND]: 'The rule no longer exists on the router',
 };

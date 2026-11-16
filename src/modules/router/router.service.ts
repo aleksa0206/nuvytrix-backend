@@ -55,8 +55,8 @@ const POLL_PAGES = [
 ] as const;
 
 /**
- * Reads the Huawei router through its web UI (with the administrator's account) and UPnP. Read
- * only: no request here changes router configuration. See docs/huawei/.
+ * Reads the Huawei router through its web UI (with the administrator's account) and UPnP. Nothing
+ * here changes router configuration; writes live in RouterFirewallService. See docs/huawei/.
  */
 export class RouterService {
   private snapshot: RouterSnapshot | null = null;
@@ -156,6 +156,11 @@ export class RouterService {
     return snapshot;
   }
 
+  /** Replaces the IPv4 filter in the last reading after Nuvytrix changed it on the router. */
+  updateIpFilter(state: IpFilterState) {
+    if (this.snapshot) this.snapshot = { ...this.snapshot, ipFilter: state };
+  }
+
   /** Reads the firewall log page and feeds it to the firewall import (deduplicated). */
   async importFirewallLog() {
     const pages = await this.web.fetchPages(['firewallLog'] as const);
@@ -249,7 +254,10 @@ export class RouterService {
           // The UPnP WAN counters miss hardware-accelerated (forwarded) traffic, so real use is
           // measured on the LAN side: bytes the router sent to / received from LAN ports and Wi-Fi.
           // This includes traffic between local devices as well as internet traffic.
-          lanDownloadBps: rate(lanTotal(row, 'bytesSent'), previous && lanTotal(previous, 'bytesSent')),
+          lanDownloadBps: rate(
+            lanTotal(row, 'bytesSent'),
+            previous && lanTotal(previous, 'bytesSent')
+          ),
           lanUploadBps: rate(
             lanTotal(row, 'bytesReceived'),
             previous && lanTotal(previous, 'bytesReceived')
