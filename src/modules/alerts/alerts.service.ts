@@ -10,7 +10,12 @@ export type AlertKind =
   | 'optical_weak'
   | 'optical_ok'
   | 'optical_loss'
-  | 'certificate_expiring';
+  | 'certificate_expiring'
+  | 'server_power'
+  | 'server_disk'
+  | 'server_memory'
+  | 'server_temperature'
+  | 'database_down';
 export type AlertSeverity = 'info' | 'warning' | 'error';
 
 interface AlertRow {

@@ -54,12 +54,12 @@ Status: ⬜ nije počet · 🟨 u radu · ✅ gotovo · ⛔ čeka odobrenje
 
 ## Faza 4 – Server
 
-### NVX-08 – Monitoring Ubuntu servera ⬜
+### NVX-08 – Monitoring Ubuntu servera ✅
 **Opis:** CPU, RAM, disk, load, uptime, temperatura, greške mrežnog interfejsa i stanje baterije/napajanja (server je laptop). Čitanje iz read-only `/proc` i `/sys`, bez root-a. Ekran Server sa istorijom.
 **Prihvatanje:** vrednosti se poklapaju sa `top`/`df`/`free`; istorija 7 dana; obaveštenje kad server pređe na bateriju.
 **Zavisi od:** NVX-01
 
-### NVX-09 – Monitoring PostgreSQL-a ⬜
+### NVX-09 – Monitoring PostgreSQL-a ✅
 **Opis:** Dostupnost, broj konekcija, veličina baze, najduži aktivan upit, iz postojeće konekcije aplikacije.
 **Prihvatanje:** prikaz u ekranu Server; obaveštenje kad baza nije dostupna.
 **Zavisi od:** NVX-08

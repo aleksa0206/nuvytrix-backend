@@ -10,6 +10,7 @@ import * as routerPonBytes from './20261116000008_router_pon_bytes';
 import * as alerts from './20261116000009_alerts';
 import * as deviceIntelligence from './20261117000010_device_intelligence';
 import * as monitoringQuality from './20261117000011_monitoring_quality';
+import * as serverSamples from './20261117000012_server_samples';
 
 type Migration = Knex.Migration;
 
@@ -27,6 +28,7 @@ const migrations: Record<string, Migration> = {
   '20261116000009_alerts': alerts,
   '20261117000010_device_intelligence': deviceIntelligence,
   '20261117000011_monitoring_quality': monitoringQuality,
+  '20261117000012_server_samples': serverSamples,
 };
 
 export const migrationSource: Knex.MigrationSource<string> = {

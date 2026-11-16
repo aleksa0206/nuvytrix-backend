@@ -39,6 +39,10 @@ import { RouterDiagnosticsService } from '../modules/router/routerDiagnostics.se
 import { RouterAccessService } from '../modules/router/routerAccess.service';
 import { RouterIpv6Service } from '../modules/router/routerIpv6.service';
 import { AlertsService } from '../modules/alerts/alerts.service';
+import {
+  ServerMonitorService,
+  type ServerMonitorSettings,
+} from '../modules/server/serverMonitor.service';
 import { RouterWriter } from '../modules/router/routerWriter';
 import { HUAWEI_UPNP_DEFAULTS, UpnpClient } from '../modules/router/upnpClient';
 
@@ -50,6 +54,7 @@ export interface ContainerOverrides {
   routerWritesEnabled?: boolean;
   routerDiagnosticsTiming?: { pollMs: number; maxWaitMs: number };
   ownAddresses?: string[];
+  serverMonitor?: Partial<ServerMonitorSettings>;
   upnpClient?: UpnpClient;
 }
 
@@ -57,6 +62,7 @@ class Container {
   public auditRepository: AuditRepository;
   public auditService: AuditService;
   public alertsService: AlertsService;
+  public serverMonitorService: ServerMonitorService;
 
   public authRepository: AuthRepository;
   public authService: AuthService;
@@ -101,6 +107,21 @@ class Container {
     this.auditRepository = new AuditRepository(db);
     this.auditService = new AuditService(this.auditRepository);
     this.alertsService = new AlertsService(db);
+    this.serverMonitorService = new ServerMonitorService(
+      db,
+      {
+        procRoot: '/proc',
+        sysRoot: '/sys',
+        // /host/mnt/data is the backup disk, mounted read-only into the API container.
+        disks: [
+          { path: '/', name: 'System' },
+          { path: '/host/mnt/data', name: 'Data' },
+        ],
+        retentionDays: env.MONITORING_RETENTION_DAYS,
+        ...overrides.serverMonitor,
+      },
+      this.alertsService
+    );
     this.deviceIntelService = new DeviceIntelService(db, this.alertsService, ownAddresses);
 
     this.authRepository = new AuthRepository(db);

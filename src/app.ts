@@ -12,6 +12,7 @@ import { errorHandler, notFoundHandler } from './common/middleware/errorHandler'
 import authRoutes from './modules/auth/auth.routes';
 import auditRoutes from './modules/audit/audit.routes';
 import alertsRoutes from './modules/alerts/alerts.routes';
+import serverRoutes from './modules/server/server.routes';
 import healthRoutes from './modules/health/health.routes';
 import devicesRoutes from './modules/devices/devices.routes';
 import firewallRoutes from './modules/firewall/firewall.routes';
@@ -48,6 +49,7 @@ api.use(apiRateLimiter);
 api.use('/auth', authRoutes);
 api.use('/audit-logs', auditRoutes);
 api.use('/alerts', alertsRoutes);
+api.use('/server', serverRoutes);
 api.use('/firewall', firewallRoutes);
 api.use('/monitoring', monitoringRoutes);
 api.use('/dns', dnsRoutes);

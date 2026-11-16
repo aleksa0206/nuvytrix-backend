@@ -33,6 +33,11 @@ services:
     network_mode: host
     cap_add:
       - NET_RAW
+    # Read-only: the backup disk, so the Server page can report its usage and Nuvytrix can list
+    # the backup files. /proc and /sys of the host are visible without mounts (host networking,
+    # no privileges needed).
+    volumes:
+      - /mnt/data:/host/mnt/data:ro
     env_file: .env
     environment:
       NODE_ENV: production

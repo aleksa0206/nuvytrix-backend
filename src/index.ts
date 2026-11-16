@@ -22,6 +22,18 @@ function startBackgroundJobs() {
 
   setInterval(() => void container.deviceIntelService.deleteExpired(), HOURLY_MS).unref();
 
+  const sampleServer = () =>
+    container.serverMonitorService
+      .sample()
+      .catch((err) => logger.error({ err }, 'Server sample failed'));
+  void sampleServer();
+  setInterval(sampleServer, 60_000).unref();
+  setInterval(() => {
+    container.serverMonitorService
+      .deleteExpired()
+      .catch((err) => logger.error({ err }, 'Server sample cleanup failed'));
+  }, HOURLY_MS).unref();
+
   setInterval(() => {
     container.alertsService
       .deleteExpired()
