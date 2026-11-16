@@ -57,6 +57,8 @@ const envSchema = z.object({
   // true when nmap runs as non-root with CAP_NET_RAW (the Docker image); needed for ARP and MACs.
   NMAP_PRIVILEGED: booleanString.default(false),
   SCAN_TIMEOUT_SECONDS: z.coerce.number().int().positive().max(1800).default(180),
+  // Hour (0-23, server time) of the nightly port scan; -1 turns it off.
+  PORT_SCAN_HOUR: z.coerce.number().int().min(-1).max(23).default(2),
   DISCOVERY_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(0),
   DEVICE_ONLINE_WINDOW_MINUTES: z.coerce.number().int().positive().default(30),
 

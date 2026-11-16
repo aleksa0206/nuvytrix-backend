@@ -1,3 +1,7 @@
+import { z } from 'zod';
+import { asyncHandler } from '../../common/utils/asyncHandler';
+import { requestContext } from '../../common/utils/requestContext';
+import { container } from '../../container';
 import { Router } from 'express';
 import { requireAuth } from '../../common/middleware/auth';
 import { validateBody, validateParams, validateQuery } from '../../common/middleware/validate';
@@ -141,5 +145,78 @@ router.post('/discovery/scans', validateBody(startScanSchema), startScan);
  *       200: { description: Scan }
  */
 router.get('/discovery/scans/:id', validateParams(idParamSchema), getScan);
+
+/**
+ * @swagger
+ * /devices/{id}/ports:
+ *   get:
+ *     summary: Open ports found on the device (closed ones keep their closing time)
+ *     tags: [Devices]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: "{ ports, scannedAt }" }
+ * /port-scans:
+ *   get:
+ *     summary: Latest port scans
+ *     tags: [Devices]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: "{ running, scans }" }
+ *   post:
+ *     summary: Start a port and service scan of one device ({ deviceId }) or of every online device
+ *     description: >
+ *       Top 200 TCP ports with light version detection, normal timing, no scripts, only on the
+ *       allowed networks. Devices tagged no-scan are skipped. Audited.
+ *     tags: [Devices]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       202: { description: Scan started }
+ *       409: { description: A scan is already running }
+ */
+router.get(
+  '/devices/:id/ports',
+  validateParams(idParamSchema),
+  asyncHandler(async (_req, res) => {
+    const id = res.locals.params.id;
+    const device = await container.devicesService.getDevice(id);
+    res.json({
+      scannedAt: device.portsScannedAt,
+      ports: await container.portScanService.devicePorts(id),
+    });
+  })
+);
+router.get(
+  '/port-scans',
+  asyncHandler(async (_req, res) => {
+    const scans = await container.portScanService.latestScans();
+    res.json({
+      running: container.portScanService.isRunning,
+      scans: scans.map((s) => ({
+        id: s.id,
+        trigger: s.trigger,
+        status: s.status,
+        hosts: s.hosts,
+        changes: s.changes,
+        error: s.error,
+        startedAt: s.started_at,
+        finishedAt: s.finished_at,
+      })),
+    });
+  })
+);
+router.post(
+  '/port-scans',
+  validateBody(z.object({ deviceId: z.number().int().positive().optional() })),
+  asyncHandler(async (req, res) => {
+    const scan = await container.portScanService.start(
+      req.body.deviceId ?? null,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(202).json({ id: scan.id, status: scan.status });
+  })
+);
 
 export default router;

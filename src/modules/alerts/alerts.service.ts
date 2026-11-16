@@ -19,7 +19,10 @@ export type AlertKind =
   | 'container_down'
   | 'container_up'
   | 'container_restarted'
-  | 'container_unhealthy';
+  | 'container_unhealthy'
+  | 'port_opened'
+  | 'port_closed'
+  | 'service_changed';
 export type AlertSeverity = 'info' | 'warning' | 'error';
 
 interface AlertRow {

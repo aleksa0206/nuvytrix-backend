@@ -31,6 +31,7 @@ export interface DeviceRow {
   lease_expires_at: Date | null;
   reserved_ip: string | null;
   connection: string | null;
+  ports_scanned_at: Date | null;
   first_seen_at: Date;
   last_seen_at: Date;
   last_scan_id: number | null;

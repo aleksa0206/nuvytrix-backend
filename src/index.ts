@@ -74,6 +74,8 @@ function startBackgroundJobs() {
     }
   }
 
+  setInterval(() => void container.portScanService.runScheduledIfDue(), 10 * 60_000).unref();
+
   if (env.DISCOVERY_INTERVAL_MINUTES > 0) {
     setInterval(
       () => {

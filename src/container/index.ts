@@ -8,6 +8,11 @@ import { AuthService } from '../modules/auth/auth.service';
 import { DevicesRepository } from '../modules/devices/devices.repository';
 import { DevicesService } from '../modules/devices/devices.service';
 import { DeviceIntelService } from '../modules/devices/deviceIntel.service';
+import {
+  NmapPortScanner,
+  PortScanService,
+  type PortScanner,
+} from '../modules/devices/portScan.service';
 import { NmapRunner, type HostDiscoverer } from '../modules/devices/nmapRunner';
 import { FirewallRepository } from '../modules/firewall/firewall.repository';
 import { FirewallService } from '../modules/firewall/firewall.service';
@@ -57,6 +62,7 @@ export interface ContainerOverrides {
   ownAddresses?: string[];
   serverMonitor?: Partial<ServerMonitorSettings>;
   dockerProxyUrl?: string;
+  portScanner?: PortScanner;
   upnpClient?: UpnpClient;
 }
 
@@ -73,6 +79,7 @@ class Container {
   public devicesRepository: DevicesRepository;
   public devicesService: DevicesService;
   public deviceIntelService: DeviceIntelService;
+  public portScanService: PortScanService;
 
   public firewallRepository: FirewallRepository;
   public firewallService: FirewallService;
@@ -152,6 +159,18 @@ class Container {
         onlineWindowMinutes: env.DEVICE_ONLINE_WINDOW_MINUTES,
       },
       this.deviceIntelService
+    );
+    this.portScanService = new PortScanService(
+      db,
+      overrides.portScanner ??
+        new NmapPortScanner({
+          nmapPath: env.NMAP_PATH,
+          privileged: env.NMAP_PRIVILEGED,
+          timeoutSeconds: 1800,
+        }),
+      this.auditService,
+      { allowedCidrs: env.ALLOWED_SCAN_CIDRS, scheduledHour: env.PORT_SCAN_HOUR },
+      this.alertsService
     );
 
     this.firewallRepository = new FirewallRepository(db);

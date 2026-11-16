@@ -226,6 +226,7 @@ export class DevicesService {
       leaseExpiresAt: row.lease_expires_at ?? null,
       reservedIp: row.reserved_ip ?? null,
       connection: row.connection ?? null,
+      portsScannedAt: row.ports_scanned_at ?? null,
       status: online ? ('online' as const) : ('offline' as const),
       isNew: row.first_seen_at.getTime() >= now - NEW_DEVICE_HOURS * 3_600_000,
       firstSeenAt: row.first_seen_at,
