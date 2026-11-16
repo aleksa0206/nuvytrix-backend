@@ -31,7 +31,10 @@ export type AuditAction =
   | 'router.dmz_deleted'
   | 'router.port_trigger_created'
   | 'router.port_trigger_updated'
-  | 'router.port_trigger_deleted';
+  | 'router.port_trigger_deleted'
+  | 'router.wifi_network_created'
+  | 'router.wifi_network_updated'
+  | 'router.wifi_network_deleted';
 
 export interface AuditEntry {
   adminId: number | null;

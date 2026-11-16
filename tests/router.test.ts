@@ -32,6 +32,7 @@ const PAGES: Record<RouterPage, string> = {
   wanList: '',
   dmz: '',
   portTrigger: '',
+  wifi: '',
 };
 
 class FakeWeb extends HuaweiWebClient {

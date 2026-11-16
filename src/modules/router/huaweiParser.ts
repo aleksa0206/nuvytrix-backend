@@ -588,3 +588,60 @@ export function parsePortTriggers(page: string): PortTriggerRule[] | null {
       openProtocol: t[7] ?? '',
     }));
 }
+
+export type WifiSecurity = 'open' | 'wep' | 'wpa' | 'wpa2' | 'wpa-wpa2' | 'wpa3' | 'other';
+
+export interface WifiNetwork {
+  /** TR-098 path (`…WLANConfiguration.N`). */
+  domain: string;
+  instance: number;
+  band: '2.4 GHz' | '5 GHz';
+  enabled: boolean;
+  ssid: string;
+  /** False when the network name is not broadcast. */
+  visible: boolean;
+  security: WifiSecurity;
+}
+
+const SECURITY: Record<string, WifiSecurity> = {
+  '11i': 'wpa2',
+  WPAand11i: 'wpa-wpa2',
+  WPA: 'wpa',
+  WPA3: 'wpa3',
+};
+
+/**
+ * WlanBasic.asp: `stWlan(domain, name, enable, ssid, wlHide, DeviceNum, wmmEnable, BeaconType,
+ * BasicEncryptionModes, BasicAuthenticationMode, …)`. The page also holds Wi-Fi keys
+ * (`stPreSharedKey`, `stWEPKey`, RADIUS key); this parser never reads them.
+ */
+export function parseWifiNetworks(page: string): WifiNetwork[] | null {
+  if (!page.includes('function stWlan(')) return null;
+  return parseConstructorCalls(page, 'stWlan')
+    .filter((w) => /\.WLANConfiguration\.\d+$/.test(w[0] ?? ''))
+    .map((w) => {
+      const instance = Number(w[0]!.split('.').pop());
+      const beacon = w[7] ?? '';
+      const open = beacon === 'Basic' && (w[8] ?? 'None') === 'None';
+      return {
+        domain: w[0]!,
+        instance,
+        band: bandOf(instance),
+        enabled: w[2] === '1',
+        ssid: w[3] ?? '',
+        visible: w[4] === '1',
+        security: beacon === 'Basic' ? (open ? 'open' : 'wep') : (SECURITY[beacon] ?? 'other'),
+      };
+    });
+}
+
+/**
+ * True when the network's WPA key equals `key`. The key on the page is compared here and
+ * nowhere else; it is never returned.
+ */
+export function wifiKeyMatches(page: string, domain: string, key: string): boolean {
+  const entry = parseConstructorCalls(page, 'stPreSharedKey').find(
+    (k) => k[0] === `${domain}.PreSharedKey.1`
+  );
+  return !!entry && (entry[1] === key || entry[2] === key);
+}

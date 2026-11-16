@@ -21,6 +21,7 @@ import {
 } from './routerMacFilter.schema';
 import { portMappingIndexSchema, portMappingSchema } from './routerPortMapping.schema';
 import { dmzSchema, portTriggerSchema, triggerIndexSchema } from './routerForwarding.schema';
+import { wifiCreateSchema, wifiIndexSchema, wifiUpdateSchema } from './routerWifi.schema';
 
 const router = Router();
 router.use(requireAuth);
@@ -743,6 +744,102 @@ router.delete(
   validateParams(triggerIndexSchema),
   asyncHandler(async (req, res) => {
     const result = await container.routerForwardingService.deleteTrigger(
+      res.locals.params.index,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/wifi:
+ *   get:
+ *     summary: Wi-Fi networks on both bands, read from the router now (never their keys)
+ *     tags: [Router Wi-Fi]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Networks and whether Nuvytrix may change them }
+ *   post:
+ *     summary: Add a Wi-Fi network with WPA2 or WPA/WPA2 and a key
+ *     description: >
+ *       Created switched off, then secured in a second request; removed again if securing fails.
+ *       The key is written to the router and compared on read-back; it is never stored or returned.
+ *     tags: [Router Wi-Fi]
+ *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [band, ssid, enabled, visible, security, password]
+ *             properties:
+ *               band: { type: string, enum: ['2.4 GHz', '5 GHz'] }
+ *               ssid: { type: string, maxLength: 32 }
+ *               enabled: { type: boolean }
+ *               visible: { type: boolean }
+ *               security: { type: string, enum: [wpa2, wpa-wpa2] }
+ *               password: { type: string, minLength: 8, maxLength: 63 }
+ *     responses:
+ *       201: { description: The new network }
+ * /router/wifi/{index}:
+ *   put:
+ *     summary: Change a network (index from WLANConfiguration.{index}); password optional
+ *     tags: [Router Wi-Fi]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: Updated network }
+ *       404: { description: No such network }
+ *   delete:
+ *     summary: Remove an extra network; the main network of each band cannot be removed
+ *     tags: [Router Wi-Fi]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: index, required: true, schema: { type: integer } }
+ *     responses:
+ *       200: { description: Remaining networks }
+ */
+router.get(
+  '/wifi',
+  asyncHandler(async (_req, res) => {
+    const service = container.routerWifiService;
+    res.json({ writesEnabled: service.writesEnabled, networks: await service.getNetworks() });
+  })
+);
+router.post(
+  '/wifi',
+  validateBody(wifiCreateSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerWifiService.addNetwork(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.status(201).json({ network: result.network });
+  })
+);
+router.put(
+  '/wifi/:index',
+  validateParams(wifiIndexSchema),
+  validateBody(wifiUpdateSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerWifiService.updateNetwork(
+      res.locals.params.index,
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json({ network: result.network });
+  })
+);
+router.delete(
+  '/wifi/:index',
+  validateParams(wifiIndexSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerWifiService.deleteNetwork(
       res.locals.params.index,
       req.admin!.adminId,
       requestContext(req)

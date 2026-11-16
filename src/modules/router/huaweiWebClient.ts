@@ -3,8 +3,9 @@ import { isLoginPage, parseOnttoken } from './huaweiParser';
 
 /**
  * The only pages this client may request. Anything else (including every *.cgi except login and
- * logout, and the pages that embed Wi-Fi keys) is refused before a request is made.
- * See docs/huawei/authentication-and-sessions.md.
+ * logout) is refused before a request is made. One page embeds Wi-Fi keys (`wifi`): it is needed to
+ * change Wi-Fi settings, its parser keeps only non-secret fields, and keys are only compared with a
+ * requested one, never returned, stored or logged. See docs/huawei/wifi-management.md.
  */
 export const ALLOWED_PAGES = {
   systemInfo: '/html/ssmp/deviceinfo/deviceinfo.asp',
@@ -22,6 +23,8 @@ export const ALLOWED_PAGES = {
   portMapping: '/html/bbsp/portmapping/portmappingnew.asp',
   dmz: '/html/bbsp/dmz/dmz.asp',
   portTrigger: '/html/bbsp/porttrigger/porttrigger.asp',
+  // Lists every SSID of both bands, with their Wi-Fi keys (see above).
+  wifi: '/html/amp/wlanbasic/WlanBasic.asp?2G',
   // Also carries WAN account fields; only the WAN path, mode and services are parsed from it.
   wanList: '/html/bbsp/common/wan_list.asp',
 } as const;
@@ -42,6 +45,7 @@ export const WRITABLE_PAGES = {
   portMapping: ['addcfgajax', 'complexajax', 'del'],
   dmz: ['add', 'set', 'del'],
   portTrigger: ['add', 'set', 'del'],
+  wifi: ['add', 'set', 'del'],
 } as const satisfies Partial<Record<RouterPage, readonly string[]>>;
 
 export type WritablePage = keyof typeof WRITABLE_PAGES;
@@ -57,6 +61,8 @@ export interface FormSubmission {
   /** More objects in the URL after the main one, e.g. `ma=<mapping>.X_HW_Portlist.1`. */
   extraQuery?: Record<string, string>;
   fields: Record<string, string>;
+  /** A request the page sends first in the same session (the Wi-Fi page does before a delete). */
+  before?: Omit<FormSubmission, 'page' | 'before'>;
 }
 
 export interface HuaweiWebClientOptions {
@@ -100,29 +106,12 @@ export class HuaweiWebClient {
    * Returns the page as read after the write, so the caller can verify the change.
    */
   submitForm(form: FormSubmission): Promise<string> {
-    const allowed: readonly string[] = WRITABLE_PAGES[form.page];
-    if (!allowed.includes(form.action)) {
-      return Promise.reject(new Error(`Refusing ${form.action}.cgi on ${form.page}`));
-    }
-    if (
-      form.object !== undefined &&
-      !/^InternetGatewayDevice(\.[A-Za-z0-9_]+)+$/.test(form.object)
-    ) {
-      return Promise.reject(new Error(`Refusing malformed object path ${form.object}`));
-    }
-    const keys = [form.objectKey ?? 'x', ...Object.keys(form.extraQuery ?? {})];
-    if (keys.some((key) => !/^[A-Za-z_]{1,16}$/.test(key))) {
-      return Promise.reject(new Error(`Refusing URL keys ${keys.join(',')}`));
-    }
-    // Extra objects are router paths, or a path inside the object being added (GROUP_a_x.…).
-    const badExtra = Object.values(form.extraQuery ?? {}).find(
-      (value) => !/^(InternetGatewayDevice|GROUP_a_x)(\.[A-Za-z0-9_]+)+$/.test(value)
-    );
-    if (badExtra !== undefined) {
-      return Promise.reject(new Error(`Refusing malformed object path ${badExtra}`));
-    }
+    const first = form.before ? { ...form.before, page: form.page } : null;
+    const problem = checkForm(form) ?? (first ? checkForm(first) : null);
+    if (problem) return Promise.reject(new Error(problem));
     return this.withSession(async (session) => {
       await session.read(form.page);
+      if (first) await session.post(first);
       await session.post(form);
       return session.read(form.page);
     });
@@ -154,7 +143,8 @@ export class HuaweiWebClient {
       },
       post: async (form) => {
         if (!token) throw new RouterUnavailableError('The router page carried no form token');
-        const pagePath = ALLOWED_PAGES[form.page];
+        // The page's query (`?2G`) is not part of the CGI directory or RequestFile.
+        const pagePath = ALLOWED_PAGES[form.page].split('?')[0]!;
         const directory = pagePath.slice(0, pagePath.lastIndexOf('/') + 1);
         // Same URL the page builds: the CGI is relative to the page, RequestFile has no leading slash.
         const query =
@@ -168,7 +158,7 @@ export class HuaweiWebClient {
           headers: {
             Cookie: cookie,
             'Content-Type': 'application/x-www-form-urlencoded',
-            Referer: new URL(pagePath, this.options.baseUrl).href,
+            Referer: new URL(ALLOWED_PAGES[form.page], this.options.baseUrl).href,
             Origin: new URL(this.options.baseUrl).origin,
           },
           body: new URLSearchParams({ ...form.fields, 'x.X_HW_Token': token }),
@@ -254,6 +244,24 @@ export class HuaweiWebClient {
       throw new RouterUnavailableError(`Router not reachable: ${(err as Error).name}`);
     }
   }
+}
+
+/** Why a form must not be sent, or null: only allow-listed CGIs and well-formed object paths. */
+function checkForm(form: FormSubmission): string | null {
+  const allowed: readonly string[] = WRITABLE_PAGES[form.page];
+  if (!allowed.includes(form.action)) return `Refusing ${form.action}.cgi on ${form.page}`;
+  if (form.object !== undefined && !/^InternetGatewayDevice(\.[A-Za-z0-9_]+)+$/.test(form.object)) {
+    return `Refusing malformed object path ${form.object}`;
+  }
+  const keys = [form.objectKey ?? 'x', ...Object.keys(form.extraQuery ?? {})];
+  if (keys.some((key) => !/^[A-Za-z_]{1,16}$/.test(key))) {
+    return `Refusing URL keys ${keys.join(',')}`;
+  }
+  // Extra objects are router paths, or a path inside the object being added (GROUP_a_x.…).
+  const badExtra = Object.values(form.extraQuery ?? {}).find(
+    (value) => !/^(InternetGatewayDevice|GROUP_a_x)(\.[A-Za-z0-9_]+)+$/.test(value)
+  );
+  return badExtra === undefined ? null : `Refusing malformed object path ${badExtra}`;
 }
 
 interface Session {
