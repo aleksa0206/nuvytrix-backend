@@ -45,6 +45,7 @@ import { RouterDiagnosticsService } from '../modules/router/routerDiagnostics.se
 import { RouterAccessService } from '../modules/router/routerAccess.service';
 import { RouterIpv6Service } from '../modules/router/routerIpv6.service';
 import { AlertsService } from '../modules/alerts/alerts.service';
+import { AlertSettingsService } from '../modules/alerts/alertSettings.service';
 import { DockerMonitorService } from '../modules/docker/dockerMonitor.service';
 import { SshMonitorService } from '../modules/security/sshMonitor.service';
 import {
@@ -73,6 +74,7 @@ class Container {
   public auditRepository: AuditRepository;
   public auditService: AuditService;
   public alertsService: AlertsService;
+  public alertSettingsService: AlertSettingsService;
   public serverMonitorService: ServerMonitorService;
   public dockerMonitorService: DockerMonitorService;
   public sshMonitorService: SshMonitorService;
@@ -121,10 +123,12 @@ class Container {
     this.auditRepository = new AuditRepository(db);
     this.auditService = new AuditService(this.auditRepository);
     this.alertsService = new AlertsService(db);
+    this.alertSettingsService = new AlertSettingsService(db, this.auditService);
     this.sshMonitorService = new SshMonitorService(
       db,
       { logPath: overrides.sshAuthLog ?? env.SSH_AUTH_LOG, retentionDays: 90 },
-      this.alertsService
+      this.alertsService,
+      this.alertSettingsService
     );
     this.dockerMonitorService = new DockerMonitorService(
       { baseUrl: overrides.dockerProxyUrl ?? env.DOCKER_PROXY_URL, token: env.DOCKER_PROXY_TOKEN },
@@ -143,7 +147,8 @@ class Container {
         retentionDays: env.MONITORING_RETENTION_DAYS,
         ...overrides.serverMonitor,
       },
-      this.alertsService
+      this.alertsService,
+      this.alertSettingsService
     );
     this.deviceIntelService = new DeviceIntelService(db, this.alertsService, ownAddresses);
 
@@ -200,7 +205,8 @@ class Container {
       overrides.prober ?? new SystemProber(env.PING_PATH),
       this.auditService,
       { routerHost: env.ROUTER_HOST, retentionDays: env.MONITORING_RETENTION_DAYS },
-      this.alertsService
+      this.alertsService,
+      this.alertSettingsService
     );
 
     this.dnsService = new DnsService(
@@ -251,7 +257,8 @@ class Container {
         retentionDays: env.MONITORING_RETENTION_DAYS,
       },
       this.alertsService,
-      this.deviceIntelService
+      this.deviceIntelService,
+      this.alertSettingsService
     );
     const routerWriter = new RouterWriter(routerWebClient, this.auditService, {
       writesEnabled: overrides.routerWritesEnabled ?? env.ROUTER_WRITES_ENABLED,

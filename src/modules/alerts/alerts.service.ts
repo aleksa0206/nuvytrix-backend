@@ -24,7 +24,9 @@ export type AlertKind =
   | 'port_closed'
   | 'service_changed'
   | 'ssh_new_source'
-  | 'ssh_failures';
+  | 'ssh_failures'
+  | 'high_latency'
+  | 'backup_failed';
 export type AlertSeverity = 'info' | 'warning' | 'error';
 
 interface AlertRow {
@@ -35,6 +37,7 @@ interface AlertRow {
   details: Record<string, unknown> | null;
   created_at: Date;
   read_at: Date | null;
+  resolved_at: Date | null;
 }
 
 const LIST_LIMIT = 50;
@@ -50,9 +53,18 @@ export class AlertsService {
     kind: AlertKind,
     severity: AlertSeverity,
     title: string,
-    details: Record<string, unknown> = {}
+    details: Record<string, unknown> = {},
+    /**
+     * The subject of an ongoing problem (e.g. `target:3`): while an alert with this key is open
+     * (not resolved), the same problem is not raised again, also across restarts.
+     */
+    key?: string
   ): Promise<void> {
     try {
+      if (key) {
+        const open = await this.db('alerts').where({ key }).whereNull('resolved_at').first('id');
+        if (open) return;
+      }
       // Titles can carry names from the network (DHCP hostnames); never let a long one drop the alert.
       const safeTitle = title.length > TITLE_MAX ? `${title.slice(0, TITLE_MAX - 1)}…` : title;
       await this.db('alerts').insert({
@@ -60,11 +72,33 @@ export class AlertsService {
         severity,
         title: safeTitle,
         details: JSON.stringify(details),
+        key: key?.slice(0, 160) ?? null,
       });
       logger.info({ kind, title }, 'Alert raised');
     } catch (err) {
       logger.error({ err, kind }, 'Could not store alert');
     }
+  }
+
+  /** Marks the open alert for a subject as resolved; returns whether there was one. */
+  async resolve(key: string): Promise<boolean> {
+    try {
+      const n = await this.db('alerts')
+        .where({ key })
+        .whereNull('resolved_at')
+        .update({ resolved_at: this.db.fn.now() });
+      return n > 0;
+    } catch (err) {
+      logger.error({ err, key }, 'Could not resolve alert');
+      return false;
+    }
+  }
+
+  /** Whether a subject currently has an open alert. */
+  async isOpen(key: string): Promise<boolean> {
+    return (
+      (await this.db('alerts').where({ key }).whereNull('resolved_at').first('id')) !== undefined
+    );
   }
 
   async unreadCount(): Promise<number> {
@@ -90,6 +124,7 @@ export class AlertsService {
         details: row.details,
         createdAt: row.created_at,
         read: row.read_at !== null,
+        resolvedAt: row.resolved_at,
       })),
     };
   }

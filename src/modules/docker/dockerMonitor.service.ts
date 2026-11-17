@@ -149,9 +149,11 @@ export class DockerMonitorService {
           'container_down',
           'error',
           `Container ${c.name} stopped (exit code ${c.exitCode ?? '?'})`,
-          { container: c.name, state: c.state }
+          { container: c.name, state: c.state },
+          `container:${c.name}`
         );
       } else if (!before.running && now.running) {
+        await this.alerts.resolve(`container:${c.name}`);
         await this.alerts.raise('container_up', 'info', `Container ${c.name} is running again`, {
           container: c.name,
         });
@@ -171,10 +173,11 @@ export class DockerMonitorService {
           'container_unhealthy',
           'warning',
           `Container ${c.name} is unhealthy`,
-          {
-            container: c.name,
-          }
+          { container: c.name },
+          `container-health:${c.name}`
         );
+      } else if (!before.healthy && now.healthy) {
+        await this.alerts.resolve(`container-health:${c.name}`);
       }
     }
   }

@@ -129,7 +129,7 @@ _Stanje 2026-11-16: upiti sa PC-ja rade, blokiranje radi, oporavak posle restart
 
 ## Faza 8 – Obaveštenja i pouzdanost
 
-### NVX-19 – Podesiva obaveštenja ⬜
+### NVX-19 – Podesiva obaveštenja ✅
 **Opis:** Proširiti postojeća obaveštenja pragovima: CPU, RAM, disk, latencija, jitter, gubitak paketa, dostupnost uređaja, internet, DNS, kontejneri, SSH, novi portovi, backup. Nivoi ozbiljnosti, potvrda (acknowledge), „rešeno“, bez duplikata. Bez generičkog rule engine-a.
 **Prihvatanje:** pragovi se menjaju u UI-ju; isto obaveštenje se ne ponavlja dok se stanje ne promeni.
 **Zavisi od:** NVX-08, NVX-11, NVX-13

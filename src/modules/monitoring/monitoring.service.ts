@@ -4,6 +4,7 @@ import { AppError, NotFoundError } from '../../common/errors/AppError';
 import { ErrorCode } from '../../common/errors/errorCodes';
 import { logger } from '../../config/logger';
 import type { RequestContext } from '../auth/auth.types';
+import type { AlertSettingsService } from '../alerts/alertSettings.service';
 import type { AlertsService } from '../alerts/alerts.service';
 import type { AuditService } from '../audit/audit.service';
 import type { MonitoringRepository, TargetFields, TargetRow } from './monitoring.repository';
@@ -17,6 +18,8 @@ const INTERNET_HOST = '1.1.1.1';
 const DOWN_AFTER_FAILURES = 2;
 /** Certificate alert when an HTTPS target's certificate ends within this many days. */
 const CERT_WARNING_DAYS = 14;
+/** Consecutive checks that must all exceed a quality threshold before it alerts. */
+const QUALITY_CHECKS = 3;
 const UPTIME_WINDOW_HOURS = 24;
 const MAX_SERIES_POINTS = 300;
 
@@ -35,13 +38,8 @@ export interface TargetInput {
 
 export class MonitoringService {
   private checkInProgress = false;
-  /**
-   * Consecutive failures per target, and which targets were reported down.
-   * ponytail: in memory, so a restart during an outage reports it again but not its end; store
-   * the state if that matters.
-   */
+  /** Consecutive failures per target (the open outage itself is kept in the alerts table). */
   private failures = new Map<number, number>();
-  private reportedDown = new Set<number>();
   private reportedCertificates = new Set<number>();
 
   constructor(
@@ -49,7 +47,8 @@ export class MonitoringService {
     private prober: Prober,
     private auditService: AuditService,
     private settings: MonitoringSettings,
-    private alerts?: AlertsService
+    private alerts?: AlertsService,
+    private thresholds?: AlertSettingsService
   ) {}
 
   /** Keeps the built-in targets in line: the router (ROUTER_HOST, disabled without it) and the internet. */
@@ -108,6 +107,7 @@ export class MonitoringService {
     }
     await this.trackOutage(target, result);
     await this.trackCertificate(target, result);
+    await this.trackQuality(target);
     return result;
   }
 
@@ -116,7 +116,8 @@ export class MonitoringService {
     if (!this.alerts || !result.certExpiresAt) return;
     const days = (result.certExpiresAt.getTime() - Date.now()) / 86_400_000;
     if (days >= CERT_WARNING_DAYS) {
-      this.reportedCertificates.delete(target.id);
+      if (this.reportedCertificates.delete(target.id))
+        await this.alerts.resolve(`cert:${target.id}`);
       return;
     }
     if (this.reportedCertificates.has(target.id)) return;
@@ -125,7 +126,8 @@ export class MonitoringService {
       'certificate_expiring',
       days < 3 ? 'error' : 'warning',
       `${target.name}: certificate expires in ${Math.max(0, Math.floor(days))} days`,
-      { targetId: target.id, url: target.host, expiresAt: result.certExpiresAt }
+      { targetId: target.id, url: target.host, expiresAt: result.certExpiresAt },
+      `cert:${target.id}`
     );
   }
 
@@ -161,13 +163,17 @@ export class MonitoringService {
     };
   }
 
-  /** Raises one alert when a target goes down (after repeated failures) and one when it is back. */
+  /**
+   * Raises one alert when a target goes down (after repeated failures) and one when it is back.
+   * The open alert is keyed in the database, so a restart neither repeats nor loses the outage.
+   */
   private async trackOutage(target: TargetRow, result: ProbeResult): Promise<void> {
     if (!this.alerts) return;
     const subject = target.managed_key === INTERNET_TARGET_KEY ? 'Internet' : target.name;
+    const key = `target:${target.id}`;
     if (result.success) {
       this.failures.delete(target.id);
-      if (this.reportedDown.delete(target.id)) {
+      if (await this.alerts.resolve(key)) {
         await this.alerts.raise('target_up', 'info', `${subject} is back`, {
           targetId: target.id,
           host: target.host,
@@ -177,16 +183,70 @@ export class MonitoringService {
     }
     const failures = (this.failures.get(target.id) ?? 0) + 1;
     this.failures.set(target.id, failures);
-    if (failures === DOWN_AFTER_FAILURES && !this.reportedDown.has(target.id)) {
-      this.reportedDown.add(target.id);
+    if (failures >= DOWN_AFTER_FAILURES) {
       await this.alerts.raise(
         'target_down',
         'error',
         target.managed_key === INTERNET_TARGET_KEY
           ? 'Internet is down'
           : `${target.name} is not answering`,
-        { targetId: target.id, host: target.host, error: result.error }
+        { targetId: target.id, host: target.host, error: result.error },
+        key
       );
+    }
+  }
+
+  /**
+   * Ping quality over the last checks: latency, packet loss and jitter above the thresholds on
+   * every one of the last three checks raise one alert each, resolved once they are back below.
+   */
+  private async trackQuality(target: TargetRow): Promise<void> {
+    if (!this.alerts || !this.thresholds || target.kind !== 'icmp') return;
+    const t = this.thresholds.current;
+    const recent = await this.monitoringRepository.findRecentChecks(target.id, QUALITY_CHECKS);
+    if (recent.length < QUALITY_CHECKS || recent.some((r) => !r.success)) return;
+    const checks: {
+      name: string;
+      over: (r: (typeof recent)[number]) => boolean;
+      unit: string;
+      value: (r: (typeof recent)[number]) => number | null;
+      limit: number;
+    }[] = [
+      {
+        name: 'latency',
+        limit: t.latencyMs,
+        unit: 'ms',
+        value: (r) => r.latency_ms,
+        over: (r) => (r.latency_ms ?? 0) > t.latencyMs,
+      },
+      {
+        name: 'packet loss',
+        limit: t.packetLossPercent,
+        unit: '%',
+        value: (r) => r.packet_loss_percent,
+        over: (r) => (r.packet_loss_percent ?? 0) > t.packetLossPercent,
+      },
+      {
+        name: 'jitter',
+        limit: t.jitterMs,
+        unit: 'ms',
+        value: (r) => r.jitter_ms,
+        over: (r) => (r.jitter_ms ?? 0) > t.jitterMs,
+      },
+    ];
+    for (const c of checks) {
+      const key = `quality:${target.id}:${c.name}`;
+      if (recent.every(c.over)) {
+        await this.alerts.raise(
+          'high_latency',
+          'warning',
+          `${target.name}: ${c.name} ${c.value(recent[0]!)} ${c.unit} (limit ${c.limit} ${c.unit})`,
+          { targetId: target.id, metric: c.name, value: c.value(recent[0]!) },
+          key
+        );
+      } else if (!recent.some(c.over)) {
+        await this.alerts.resolve(key);
+      }
     }
   }
 

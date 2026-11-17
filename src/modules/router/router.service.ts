@@ -1,3 +1,4 @@
+import { DEFAULT_THRESHOLDS, type AlertSettingsService } from '../alerts/alertSettings.service';
 import type { DeviceIntelService } from '../devices/deviceIntel.service';
 import type { AlertsService } from '../alerts/alerts.service';
 import { AppError } from '../../common/errors/AppError';
@@ -59,8 +60,6 @@ const POLL_PAGES = [
 ] as const;
 
 type OpticalState = 'unknown' | 'ok' | 'weak' | 'loss';
-const OPTICAL_WEAK_DBM = -27;
-const OPTICAL_OK_DBM = -25;
 
 /**
  * Reads the Huawei router through its web UI (with the administrator's account) and UPnP. Nothing
@@ -79,7 +78,8 @@ export class RouterService {
     private firewallService: FirewallService,
     private settings: RouterSettings,
     private alerts?: AlertsService,
-    private intel?: DeviceIntelService
+    private intel?: DeviceIntelService,
+    private thresholds?: AlertSettingsService
   ) {}
 
   get isConfigured(): boolean {
@@ -183,13 +183,14 @@ export class RouterService {
   private async checkOptical(optical: OpticalInfo): Promise<void> {
     if (!this.alerts) return;
     const rx = optical.rxPowerDbm;
+    const weakBelow = (this.thresholds?.current ?? DEFAULT_THRESHOLDS).opticalWeakDbm;
     const state: OpticalState = optical.lossOfSignal
       ? 'loss'
       : rx === null
         ? this.opticalState
-        : rx < OPTICAL_WEAK_DBM
+        : rx < weakBelow
           ? 'weak'
-          : rx >= OPTICAL_OK_DBM || this.opticalState === 'ok' || this.opticalState === 'loss'
+          : rx >= weakBelow + 2 || this.opticalState === 'ok' || this.opticalState === 'loss'
             ? 'ok'
             : this.opticalState;
     if (state === this.opticalState) return;

@@ -100,6 +100,7 @@ function startBackgroundJobs() {
 
 async function main() {
   await runMigrations();
+  await container.alertSettingsService.load();
   await container.monitoringService.syncManagedTargets();
   await container.portScanService.failInterrupted();
   const interrupted = await container.devicesService.failInterruptedScans();

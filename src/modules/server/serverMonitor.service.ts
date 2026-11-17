@@ -1,6 +1,7 @@
 import { readFile, readdir, statfs } from 'node:fs/promises';
 import type { Knex } from 'knex';
 import { logger } from '../../config/logger';
+import { DEFAULT_THRESHOLDS, type AlertSettingsService } from '../alerts/alertSettings.service';
 import type { AlertsService } from '../alerts/alerts.service';
 
 /** Where host data is read; the API shares the host's /proc and /sys (host network, no virtualization of these). */
@@ -41,11 +42,6 @@ export interface ServerSample {
   };
 }
 
-/** Thresholds for alerts; NVX-19 makes them configurable. */
-const DISK_WARN_PERCENT = 90;
-const MEMORY_WARN_PERCENT = 90;
-const TEMPERATURE_WARN_C = 90;
-
 // Interfaces that are not physical links of this server.
 const VIRTUAL_NIC = /^(lo|veth|br-|docker|virbr|tailscale|wg|tun|tap)/;
 
@@ -60,13 +56,12 @@ const round = (value: number, digits = 1) => Math.round(value * 10 ** digits) / 
 export class ServerMonitorService {
   private previousCpu: { idle: number; total: number } | null = null;
   private latest: (ServerSample & { sampledAt: Date }) | null = null;
-  /** Conditions already reported; ponytail: in memory, a restart reports an ongoing one again. */
-  private active = new Set<string>();
 
   constructor(
     private db: Knex,
     private settings: ServerMonitorSettings,
-    private alerts?: AlertsService
+    private alerts?: AlertsService,
+    private thresholds?: AlertSettingsService
   ) {}
 
   get last() {
@@ -300,50 +295,71 @@ export class ServerMonitorService {
     }
   }
 
-  /** One alert when a condition starts and one when it ends. */
+  /**
+   * One alert when a condition starts and one when it ends; the open alert is keyed in the
+   * database, so a restart neither repeats it nor forgets to report the end.
+   */
   private async checkAlerts(s: ServerSample): Promise<void> {
     if (!this.alerts) return;
     const alerts = this.alerts;
+    const t = this.thresholds?.current ?? DEFAULT_THRESHOLDS;
     const track = async (
       key: string,
       on: boolean,
       start: () => Promise<void>,
       end?: () => Promise<void>
     ) => {
-      if (on && !this.active.has(key)) {
-        this.active.add(key);
-        await start();
-      } else if (!on && this.active.delete(key) && end) {
-        await end();
-      }
+      if (on) await start();
+      else if ((await alerts.resolve(key)) && end) await end();
     };
     await track(
-      'battery',
+      'server:battery',
       s.onBattery === true,
       () =>
         alerts.raise(
           'server_power',
           'error',
-          `Server is on battery (${s.batteryPercent ?? '?'} %): power outage?`
+          `Server is on battery (${s.batteryPercent ?? '?'} %): power outage?`,
+          {},
+          'server:battery'
         ),
       () => alerts.raise('server_power', 'info', 'Server is back on mains power')
     );
     for (const d of s.disks) {
-      await track(`disk:${d.name}`, d.percent >= DISK_WARN_PERCENT, () =>
-        alerts.raise('server_disk', 'warning', `Disk ${d.name} is ${d.percent} % full`)
+      const key = `server:disk:${d.name}`;
+      await track(key, d.percent >= t.diskPercent, () =>
+        alerts.raise('server_disk', 'warning', `Disk ${d.name} is ${d.percent} % full`, {}, key)
       );
     }
-    await track('memory', (s.memoryPercent ?? 0) >= MEMORY_WARN_PERCENT, () =>
-      alerts.raise('server_memory', 'warning', `Server memory is ${s.memoryPercent} % used`)
+    await track('server:memory', (s.memoryPercent ?? 0) >= t.memoryPercent, () =>
+      alerts.raise(
+        'server_memory',
+        'warning',
+        `Server memory is ${s.memoryPercent} % used`,
+        {},
+        'server:memory'
+      )
     );
-    await track('heat', (s.temperatureC ?? 0) >= TEMPERATURE_WARN_C, () =>
-      alerts.raise('server_temperature', 'warning', `Server CPU is at ${s.temperatureC} °C`)
+    await track('server:heat', (s.temperatureC ?? 0) >= t.temperatureC, () =>
+      alerts.raise(
+        'server_temperature',
+        'warning',
+        `Server CPU is at ${s.temperatureC} °C`,
+        {},
+        'server:heat'
+      )
     );
     await track(
-      'db',
+      'server:db',
       !s.db.up,
       () =>
-        alerts.raise('database_down', 'error', 'Database is not answering', { error: s.db.error }),
+        alerts.raise(
+          'database_down',
+          'error',
+          'Database is not answering',
+          { error: s.db.error },
+          'server:db'
+        ),
       () => alerts.raise('database_down', 'info', 'Database is answering again')
     );
   }

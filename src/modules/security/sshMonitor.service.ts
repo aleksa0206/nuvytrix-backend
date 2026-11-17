@@ -1,3 +1,4 @@
+import type { AlertSettingsService } from '../alerts/alertSettings.service';
 import { readFile } from 'node:fs/promises';
 import { isIP } from 'node:net';
 import type { Knex } from 'knex';
@@ -109,7 +110,8 @@ export class SshMonitorService {
   constructor(
     private db: Knex,
     private settings: SshMonitorSettings,
-    private alerts?: AlertsService
+    private alerts?: AlertsService,
+    private thresholds?: AlertSettingsService
   ) {}
 
   get enabled(): boolean {
@@ -199,7 +201,7 @@ export class SshMonitorService {
       .whereNotNull('source_ip')
       .groupBy('source_ip')
       .select('source_ip', this.db.raw('count(*)::int AS n'))
-      .havingRaw('count(*) >= ?', [FAILED_THRESHOLD]);
+      .havingRaw('count(*) >= ?', [this.thresholds?.current.sshFailures ?? FAILED_THRESHOLD]);
     for (const r of rows) {
       const ip = String(r.source_ip);
       if (this.reportedFailures.has(ip)) continue;

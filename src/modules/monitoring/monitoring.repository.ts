@@ -158,6 +158,25 @@ export class MonitoringRepository {
     >;
   }
 
+  /** The latest checks of one target, newest first. */
+  findRecentChecks(targetId: number, limit: number): Promise<LatestResult[]> {
+    return this.db('monitoring_results')
+      .where('target_id', targetId)
+      .orderBy('checked_at', 'desc')
+      .limit(limit)
+      .select(
+        'target_id',
+        'checked_at',
+        'success',
+        'latency_ms',
+        'packet_loss_percent',
+        'error',
+        'jitter_ms',
+        'http_status',
+        'cert_expires_at'
+      );
+  }
+
   /** Every check of one target since a time, oldest first: enough to find outages. */
   findChecks(
     targetId: number,

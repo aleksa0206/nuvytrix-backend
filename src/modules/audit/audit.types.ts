@@ -60,7 +60,8 @@ export type AuditAction =
   | 'router.wifi_wps_changed'
   | 'port_scan.started'
   | 'dns.rule_added'
-  | 'dns.rule_removed';
+  | 'dns.rule_removed'
+  | 'alerts.thresholds_changed';
 
 export interface AuditEntry {
   adminId: number | null;
