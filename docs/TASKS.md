@@ -120,6 +120,7 @@ _Stanje 2026-11-16: upiti sa PC-ja rade, blokiranje radi, oporavak posle restart
 **Zavisi od:** NVX-16
 
 ### NVX-18 – Promena DNS-a za celu kuću ⛔
+_2026-11-17: nije urađeno. Ruter čuva DNS samo zajedno sa celim DHCP-om (uključujući L2 relay i option 125); tačan zahtev je zapisan u docs/adguard.md. Čeka: jednodnevnu probu (NVX-16), pa test sa ruterom kao DNS-om, pa prelazak._
 **Opis:** Samo uz izričito odobrenje. Promeniti DNS u DHCP-u rutera na 192.168.100.27 (i IPv6 DNS po odluci), uz čitanje sa rutera posle promene, test na uređajima i spreman povratak.
 **Prihvatanje:** ruter stvarno prikazuje novi DNS; uređaji idu kroz AdGuard; povratak testiran.
 **Rizik:** visok (DNS cele kuće).

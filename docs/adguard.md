@@ -73,6 +73,16 @@ Target: every DHCP client gets `192.168.100.27` as DNS.
    reconnect; nothing changes for devices with static settings.
 4. Verify: query log shows the devices, `nslookup` on a phone and the PC returns AdGuard answers.
 
+**What the router's page actually sends (read 2026-11-17, not executed):** the DNS list is saved
+only together with the whole main DHCP pool, in one `set.cgi` on
+`z=InternetGatewayDevice.LANDevice.1.LANHostConfigManagement`: `z.DHCPServerEnable`,
+`z.X_HW_DHCPL2RelayEnable`, `z.X_HW_Option125Enable`, `z.X_HW_DNSList` (primary,secondary),
+`z.MinAddress`, `z.MaxAddress`, `z.DHCPLeaseTime`, and depending on the firmware mode also the LAN
+interface address. The earlier attempt sent only the pool and the DNS list and timed out. Doing it
+right means reading the current relay and option-125 flags exactly and sending them back unchanged;
+a wrong L2-relay value would stop DHCP for every device. Not done until the one-day trial has
+passed and the change can be tested with the router itself as DNS (no functional change) first.
+
 **Rollback:** set the DHCP DNS field back to empty (the router then hands out itself, as today);
 devices follow on their next renewal, or immediately after turning Wi-Fi off and on. Anyone at home
 can do this in the router's web page at `http://192.168.100.1` without a working DNS.
