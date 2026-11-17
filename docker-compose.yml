@@ -55,6 +55,9 @@ services:
       # The read-only Docker API proxy below, reachable from the host network only.
       DOCKER_PROXY_URL: http://127.0.0.1:2375
       SSH_AUTH_LOG: /host/var/log/auth.log
+      BACKUP_DIR: /host/mnt/data/backups
+      # Every project with a database; ones without a backup job show up as missing.
+      BACKUP_EXPECTED: nuvytrix,staffaway,remly,focentra,veltris,homewise,portfolio
     depends_on:
       postgres:
         condition: service_healthy

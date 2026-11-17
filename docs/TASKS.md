@@ -134,7 +134,7 @@ _Stanje 2026-11-16: upiti sa PC-ja rade, blokiranje radi, oporavak posle restart
 **Prihvatanje:** pragovi se menjaju u UI-ju; isto obaveštenje se ne ponavlja dok se stanje ne promeni.
 **Zavisi od:** NVX-08, NVX-11, NVX-13
 
-### NVX-20 – Stanje backup-a ⬜
+### NVX-20 – Stanje backup-a ✅
 **Opis:** Prikazati backup-e iz `/mnt/data/backups` i `backup.log` fajlova (Nuvytrix i sajtovi): poslednji uspešan i neuspešan, postojanje i veličina fajla, retencija, provera ispravnosti. Ne praviti drugi backup sistem. Napomena: homewise i portfolio trenutno nemaju backup.
 **Prihvatanje:** ekran prikazuje stvarne fajlove; obaveštenje kad backup ne uspe ili kasni.
 **Zavisi od:** NVX-01

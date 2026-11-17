@@ -98,6 +98,17 @@ const envSchema = z.object({
   DOCKER_PROXY_TOKEN: z.string().default(''),
   // The host's auth.log mounted read-only (see docker-compose.yml); empty turns SSH monitoring off.
   SSH_AUTH_LOG: z.string().default(''),
+  // Backup directory mounted read-only, and the projects that should have backups (comma separated).
+  BACKUP_DIR: z.string().default(''),
+  BACKUP_EXPECTED: z
+    .string()
+    .default('')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean)
+    ),
   ADGUARD_URL: z.union([z.literal(''), z.string().url()]).default(''),
   ADGUARD_USERNAME: z.string().default(''),
   ADGUARD_PASSWORD: z.string().default(''),

@@ -29,6 +29,12 @@ function startBackgroundJobs() {
   void sampleServer();
   setInterval(sampleServer, 60_000).unref();
 
+  if (container.backupMonitorService.enabled) {
+    const checkBackups = () => void container.backupMonitorService.check().catch(() => undefined);
+    checkBackups();
+    setInterval(checkBackups, HOURLY_MS).unref();
+  }
+
   if (container.sshMonitorService.enabled) {
     const readSsh = () => void container.sshMonitorService.collect();
     readSsh();

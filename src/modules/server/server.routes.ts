@@ -43,4 +43,24 @@ router.get(
   })
 );
 
+/**
+ * @swagger
+ * /server/backups:
+ *   get:
+ *     summary: Database backups on the data disk per project (newest file, size, age, readable)
+ *     description: Read-only view of the files the server's backup scripts write. Checked hourly.
+ *     tags: [Server]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: "{ enabled, checkedAt, error, projects }" }
+ */
+router.get(
+  '/backups',
+  asyncHandler(async (_req, res) => {
+    const service = container.backupMonitorService;
+    if (service.enabled && !service.status.checkedAt) await service.check();
+    res.json(service.status);
+  })
+);
+
 export default router;

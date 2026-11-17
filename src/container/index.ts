@@ -47,6 +47,7 @@ import { RouterIpv6Service } from '../modules/router/routerIpv6.service';
 import { AlertsService } from '../modules/alerts/alerts.service';
 import { AlertSettingsService } from '../modules/alerts/alertSettings.service';
 import { DockerMonitorService } from '../modules/docker/dockerMonitor.service';
+import { BackupMonitorService, type BackupSettings } from '../modules/server/backupMonitor.service';
 import { SshMonitorService } from '../modules/security/sshMonitor.service';
 import {
   ServerMonitorService,
@@ -67,6 +68,7 @@ export interface ContainerOverrides {
   dockerProxyUrl?: string;
   portScanner?: PortScanner;
   sshAuthLog?: string;
+  backups?: BackupSettings;
   upnpClient?: UpnpClient;
 }
 
@@ -77,6 +79,7 @@ class Container {
   public alertSettingsService: AlertSettingsService;
   public serverMonitorService: ServerMonitorService;
   public dockerMonitorService: DockerMonitorService;
+  public backupMonitorService: BackupMonitorService;
   public sshMonitorService: SshMonitorService;
 
   public authRepository: AuthRepository;
@@ -127,6 +130,11 @@ class Container {
     this.sshMonitorService = new SshMonitorService(
       db,
       { logPath: overrides.sshAuthLog ?? env.SSH_AUTH_LOG, retentionDays: 90 },
+      this.alertsService,
+      this.alertSettingsService
+    );
+    this.backupMonitorService = new BackupMonitorService(
+      overrides.backups ?? { dir: env.BACKUP_DIR, expected: env.BACKUP_EXPECTED },
       this.alertsService,
       this.alertSettingsService
     );
