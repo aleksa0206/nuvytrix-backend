@@ -153,7 +153,8 @@ _Stanje 2026-11-16: upiti sa PC-ja rade, blokiranje radi, oporavak posle restart
 **Prihvatanje:** izveštaj o resursima; ako je instaliran: sajtovi rade, nema automatskih blokada.
 **Zavisi od:** NVX-13, NVX-21
 
-### NVX-23 – Završno testiranje i dokumentacija ⬜
+### NVX-23 – Završno testiranje i dokumentacija ✅
+_2026-11-17: svih 10 integracija proverenih na serveru (backup upozorava za homewise i portfolio, stvaran nalaz), 6 sajtova i Nuvytrix prate se kao HTTP ciljevi, audit dopunjen završnim stanjem._
 **Opis:** Provera rutera, otkrivanja uređaja, obaveštenja, monitoringa, AdGuard-a, Docker-a, SSH-a, PostgreSQL-a, backup-a, Tailscale-a, svih 6 sajtova i Nuvytrixa. Ažurirati audit i `feature-parity.md`.
 **Prihvatanje:** sve provereno na serveru; konačan izveštaj (gotovo / delimično / HARDWARE_LIMITED).
 **Zavisi od:** svih prethodnih

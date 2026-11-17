@@ -142,3 +142,29 @@ With 4.4 GiB available the server has room; the six MySQL instances remain the l
 Tasks NVX-02 … NVX-23 in order: device intelligence (02–05), monitoring (06–07), server and Postgres
 (08–09), Docker (10–11), port scans and SSH (12–13), AdGuard (14–17; 18 only with approval),
 alerts, backups and integration health (19–21), CrowdSec evaluation (22), final verification (23).
+
+## 6. Status after implementation (2026-11-17)
+
+| Area | Now | Where |
+| --- | --- | --- |
+| Device identity history (IP, MAC, hostname), IP conflicts, MAC take-over alerts | IMPLEMENTED | `deviceIntel.service.ts`, device page |
+| DHCP/static, lease end, reservation per device | IMPLEMENTED | router device list each poll |
+| Presence history per device (~5 min resolution) | IMPLEMENTED | `device_presence`, device page |
+| Tags, trusted/untrusted, filters | IMPLEMENTED | devices list and panel |
+| Jitter, DNS response time, outage history | IMPLEMENTED | Monitoring page |
+| HTTP(S) targets with certificate expiry (six sites + Nuvytrix) | IMPLEMENTED | Monitoring page |
+| Server CPU, memory, swap, load, temperature, mains/battery, disks, NIC errors | IMPLEMENTED | Server page |
+| PostgreSQL health | IMPLEMENTED | Server page |
+| Containers (state, health, uptime, CPU, memory) via read-only, token-protected proxy | IMPLEMENTED | Server page, `deploy/docker-proxy.conf` |
+| Port and service scans, new/closed port and version-change alerts | IMPLEMENTED | device page, nightly |
+| SSH login monitoring | IMPLEMENTED | SSH logins page |
+| AdGuard Home deployed and integrated (stats, query log, rules, upstreams) | IMPLEMENTED | DNS page, `docs/adguard.md` |
+| Whole-home DNS through AdGuard | PROPOSED, not applied | `docs/adguard.md` (needs a one-day single-device trial and the router change) |
+| Configurable thresholds, alert resolution, duplicate suppression across restarts | IMPLEMENTED | Settings page |
+| Backup status (newest file, age, integrity, missing projects) | IMPLEMENTED | Server page |
+| Integration health (10 integrations) | IMPLEMENTED | Settings page |
+| CrowdSec | EVALUATED, not installed | `docs/crowdsec-evaluation.md` |
+| Per-device bandwidth, switch VLAN/SNMP/port statistics/mirroring/PoE, packet inspection | HARDWARE_LIMITED | unmanaged TL-SG1008D |
+
+Open findings for the owner: homewise and portfolio databases have no backup job; the
+`/var/log` mount is broader than needed until rsyslog writes sshd messages to their own file.
