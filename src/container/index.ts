@@ -41,10 +41,11 @@ import { RouterUpnpService } from '../modules/router/routerUpnp.service';
 import { RouterWifiScheduleService } from '../modules/router/routerWifiSchedule.service';
 import { RouterWifiRadioService } from '../modules/router/routerWifiRadio.service';
 import { RouterLedService } from '../modules/router/routerLed.service';
+import { RouterRebootService } from '../modules/router/routerReboot.service';
 import { RouterDiagnosticsService } from '../modules/router/routerDiagnostics.service';
 import { RouterAccessService } from '../modules/router/routerAccess.service';
 import { RouterIpv6Service } from '../modules/router/routerIpv6.service';
-import { AlertsService } from '../modules/alerts/alerts.service';
+import { AlertsService, type PushSettings } from '../modules/alerts/alerts.service';
 import { AlertSettingsService } from '../modules/alerts/alertSettings.service';
 import { DockerMonitorService } from '../modules/docker/dockerMonitor.service';
 import { IntegrationsService } from '../modules/overview/integrations.service';
@@ -58,6 +59,7 @@ import { RouterWriter } from '../modules/router/routerWriter';
 import { HUAWEI_UPNP_DEFAULTS, UpnpClient } from '../modules/router/upnpClient';
 
 export interface ContainerOverrides {
+  push?: PushSettings;
   hostDiscoverer?: HostDiscoverer;
   prober?: Prober;
   adguardClient?: AdGuardClient;
@@ -119,6 +121,7 @@ class Container {
   public routerWifiScheduleService: RouterWifiScheduleService;
   public routerWifiRadioService: RouterWifiRadioService;
   public routerLedService: RouterLedService;
+  public routerRebootService: RouterRebootService;
   public routerDiagnosticsService: RouterDiagnosticsService;
   public routerAccessService: RouterAccessService;
   public routerIpv6Service: RouterIpv6Service;
@@ -127,7 +130,10 @@ class Container {
     const ownAddresses = overrides.ownAddresses ?? ownIpv4Addresses();
     this.auditRepository = new AuditRepository(db);
     this.auditService = new AuditService(this.auditRepository);
-    this.alertsService = new AlertsService(db);
+    this.alertsService = new AlertsService(
+      db,
+      overrides.push ?? { url: env.NTFY_URL, token: env.NTFY_TOKEN }
+    );
     this.alertSettingsService = new AlertSettingsService(db, this.auditService);
     this.sshMonitorService = new SshMonitorService(
       db,
@@ -290,6 +296,11 @@ class Container {
     this.routerWifiScheduleService = new RouterWifiScheduleService(routerWriter);
     this.routerWifiRadioService = new RouterWifiRadioService(routerWriter);
     this.routerLedService = new RouterLedService(routerWriter);
+    this.routerRebootService = new RouterRebootService(
+      routerWriter,
+      routerWebClient,
+      this.auditService
+    );
     this.routerDiagnosticsService = new RouterDiagnosticsService(
       routerWriter,
       overrides.routerDiagnosticsTiming

@@ -1,0 +1,8 @@
+# ntfy server settings (docs/notifications.md).
+base-url: http://100.95.162.58:8090
+auth-file: /var/lib/ntfy/auth.db
+auth-default-access: deny-all
+cache-file: /var/lib/ntfy/cache.db
+cache-duration: 72h
+# No upstream-base-url: nothing is relayed through ntfy.sh. (iPhones would need it for instant
+# delivery; Android connects to this server directly.)

@@ -12,7 +12,7 @@ import {
   ipFilterSettingsSchema,
   ruleIndexSchema,
 } from './routerFirewall.schema';
-import { dhcpReservationSchema, dhcpServerSchema } from './routerDhcp.schema';
+import { dhcpDnsSchema, dhcpReservationSchema, dhcpServerSchema } from './routerDhcp.schema';
 import {
   macFilterEntryParamsSchema,
   macFilterEntrySchema,
@@ -31,6 +31,7 @@ import {
   wpsSchema,
 } from './routerWifiRadio.service';
 import { ledSchema } from './routerLed.service';
+import { rebootSchema } from './routerReboot.service';
 import { diagnosticsSchema } from './routerDiagnostics.service';
 import { deviceAccessSchema } from './routerAccess.service';
 import {
@@ -349,6 +350,31 @@ router.patch(
   validateBody(dhcpServerSchema),
   asyncHandler(async (req, res) => {
     const result = await container.routerDhcpService.changeServer(
+      req.body,
+      req.admin!.adminId,
+      requestContext(req)
+    );
+    res.json(result.state);
+  })
+);
+/**
+ * @swagger
+ * /router/dhcp/dns:
+ *   put:
+ *     summary: DNS servers handed out by DHCP ({ servers }, LAN addresses, empty = the router)
+ *     description: >
+ *       Re-sends the main pool form with every other value unchanged and verifies by reading back.
+ *       Devices pick the change up when their lease renews. Audited.
+ *     tags: [Router]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: DHCP server state after the change }
+ */
+router.put(
+  '/dhcp/dns',
+  validateBody(dhcpDnsSchema),
+  asyncHandler(async (req, res) => {
+    const result = await container.routerDhcpService.changeDns(
       req.body,
       req.admin!.adminId,
       requestContext(req)
@@ -1388,6 +1414,27 @@ router.put(
       requestContext(req)
     );
     res.json(result.state);
+  })
+);
+
+/**
+ * @swagger
+ * /router/reboot:
+ *   post:
+ *     summary: Restart the router now ({ confirm: "reboot" }); never automatic
+ *     description: >
+ *       Internet, Wi-Fi and the hosted sites are down for about 2-3 minutes. Refused within 10
+ *       minutes of the previous request. Audited before sending.
+ *     tags: [Router]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: "{ answered }: false when the router dropped the connection while restarting" }
+ */
+router.post(
+  '/reboot',
+  validateBody(rebootSchema),
+  asyncHandler(async (req, res) => {
+    res.json(await container.routerRebootService.reboot(req.admin!.adminId, requestContext(req)));
   })
 );
 

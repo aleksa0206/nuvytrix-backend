@@ -8,7 +8,7 @@ import {
   type DhcpReservation,
   type DhcpServerState,
 } from './huaweiParser';
-import type { DhcpReservationInput, DhcpServerInput } from './routerDhcp.schema';
+import type { DhcpDnsInput, DhcpReservationInput, DhcpServerInput } from './routerDhcp.schema';
 import { ipToInt } from './routerFirewall.schema';
 import type { RouterWriter } from './routerWriter';
 
@@ -84,6 +84,56 @@ export class RouterDhcpService {
         before: { startIp: server.startIp, endIp: server.endIp, leaseSeconds: server.leaseSeconds },
         requested: input,
       },
+    });
+  }
+
+  /**
+   * The DNS servers every DHCP client gets (docs/adguard.md, NVX-18). The router saves the list only
+   * with the whole main-pool form, so every other field of that form is re-sent exactly as read:
+   * a wrong L2-relay or server flag would stop DHCP for the whole home. Only LAN addresses (the
+   * router, AdGuard on the server) are accepted. Empty list = the router itself, as before.
+   */
+  async changeDns(input: DhcpDnsInput, adminId: number, context: RequestContext) {
+    this.writer.requireWritable();
+    const { server } = await this.getState();
+    const flags = [server.l2RelayFlag, server.option125Flag];
+    if (!server.enabled || flags.some((f) => f !== '0' && f !== '1')) {
+      throw refuse('The DHCP page did not show the values this change must re-send');
+    }
+    for (const ip of input.servers) checkHostAddress(ip, server);
+    const unchanged = (after: DhcpServerState) =>
+      after.enabled &&
+      after.startIp === server.startIp &&
+      after.endIp === server.endIp &&
+      after.leaseSeconds === server.leaseSeconds &&
+      after.l2RelayFlag === server.l2RelayFlag &&
+      after.option125Flag === server.option125Flag;
+
+    return this.writer.write({
+      action: 'router.dhcp_dns_changed',
+      entityType: 'router_dhcp_server',
+      form: {
+        page: 'dhcpServer',
+        action: 'set',
+        objectKey: 'z',
+        object: HOST_CONFIG,
+        // The same z= fields the router's page sends, in its order.
+        fields: {
+          'z.DHCPServerEnable': '1',
+          'z.X_HW_DHCPL2RelayEnable': server.l2RelayFlag,
+          'z.X_HW_Option125Enable': server.option125Flag,
+          'z.X_HW_DNSList': input.servers.join(','),
+          'z.MinAddress': server.startIp,
+          'z.MaxAddress': server.endIp,
+          'z.DHCPLeaseTime': String(server.leaseSeconds),
+        },
+      },
+      parse: parseServer,
+      verify: (after) =>
+        unchanged(after) && after.dnsServers.join(',') === input.servers.join(',') ? {} : null,
+      adminId,
+      context,
+      details: { before: { dnsServers: server.dnsServers }, requested: input },
     });
   }
 

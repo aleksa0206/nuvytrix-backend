@@ -1,0 +1,25 @@
+# ntfy: push notifications from Nuvytrix to phones, self-hosted on the Ubuntu server.
+# A separate compose project (-p ntfy), like AdGuard: deploying Nuvytrix never restarts it.
+#
+#   cd deploy/ntfy && docker compose -p ntfy up -d
+#
+# Published on IPv4 port 8090 only (LAN and Tailscale; the router forwards nothing to it, and no
+# IPv6 binding). Every topic needs a login or token (auth-default-access: deny-all). Messages stay
+# on this server: no upstream push service is configured. Setup and users: docs/notifications.md.
+name: ntfy
+
+services:
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    command: serve
+    restart: unless-stopped
+    ports:
+      - '0.0.0.0:8090:80'
+    volumes:
+      - ./server.yml:/etc/ntfy/server.yml:ro
+      - ./data:/var/lib/ntfy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q --tries=1 -O - http://localhost:80/v1/health | grep -q true']
+      interval: 60s
+      timeout: 5s
+      retries: 3

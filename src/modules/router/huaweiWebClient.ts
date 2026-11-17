@@ -38,6 +38,8 @@ export const ALLOWED_PAGES = {
   // Form token for radio settings; the values are read back from `wifi`.
   wifiAdvanced: '/html/amp/wlanadv/WlanAdvance.asp',
   led: '/html/ssmp/ledcfg/ledcfg.asp',
+  // Maintenance → Configuration File: its "save and reboot" form restarts the router.
+  cfgFile: '/html/ssmp/cfgfile/cfgfileroot.asp',
   // Diagnostics: started from the page, results polled from the Get*Result pages.
   diagnostics: '/html/bbsp/maintenance/diagnosecommon.asp',
   pingResult: '/html/bbsp/maintenance/GetPingResult.asp',
@@ -74,6 +76,8 @@ export const WRITABLE_PAGES = {
   wifiSchedule: ['set'],
   wifiAdvanced: ['set'],
   led: ['set'],
+  // Only the page's own "save and reboot" request (RouterRebootService).
+  cfgFile: ['set'],
   // Starts a ping or traceroute; changes no setting.
   diagnostics: ['complex'],
   deviceAccess: ['set'],
@@ -94,8 +98,8 @@ export interface FormSubmission {
   fields: Record<string, string>;
   /** A request the page sends first in the same session (the Wi-Fi page does before a delete). */
   before?: Omit<FormSubmission, 'page' | 'before'>;
-  /** Page to read back after the write when the data is not on the form's page. */
-  readBack?: RouterPage;
+  /** Page to read back after the write when the data is not on the form's page; false = none. */
+  readBack?: RouterPage | false;
 }
 
 export interface HuaweiWebClientOptions {
@@ -146,7 +150,7 @@ export class HuaweiWebClient {
       await session.read(form.page);
       if (first) await session.post(first);
       await session.post(form);
-      return session.read(form.readBack ?? form.page);
+      return form.readBack === false ? '' : session.read(form.readBack ?? form.page);
     });
   }
 

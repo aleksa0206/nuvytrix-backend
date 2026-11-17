@@ -42,6 +42,7 @@ const PAGES: Record<RouterPage, string> = {
   wifiSchedule: '',
   wifiAdvanced: '',
   led: '',
+  cfgFile: '',
   diagnostics: '',
   pingResult: '',
   traceResult: '',

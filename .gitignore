@@ -8,3 +8,4 @@ coverage
 
 # AdGuard Home state on the server
 deploy/adguard/data/
+deploy/ntfy/data/

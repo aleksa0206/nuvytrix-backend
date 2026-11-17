@@ -112,6 +112,9 @@ const envSchema = z.object({
   ADGUARD_URL: z.union([z.literal(''), z.string().url()]).default(''),
   ADGUARD_USERNAME: z.string().default(''),
   ADGUARD_PASSWORD: z.string().default(''),
+  // Optional phone push: a self-hosted ntfy topic URL and a publish token.
+  NTFY_URL: z.union([z.literal(''), z.string().url()]).default(''),
+  NTFY_TOKEN: z.string().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);

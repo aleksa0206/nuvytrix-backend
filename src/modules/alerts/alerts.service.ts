@@ -44,10 +44,54 @@ const LIST_LIMIT = 50;
 /** Matches the column length. */
 const TITLE_MAX = 200;
 const RETENTION_DAYS = 90;
+/** ntfy priorities: 4 high, 3 default, 2 low. */
+const PUSH_PRIORITY: Record<AlertSeverity, string> = { error: '4', warning: '3', info: '2' };
 
-/** Notifications shown in the app. Raising one never fails the caller. */
+/**
+ * Where alerts are also pushed to phones: a self-hosted ntfy topic URL (reachable only over
+ * Tailscale), and its access token. Empty url = in-app only.
+ */
+export interface PushSettings {
+  url: string;
+  token: string;
+}
+
+/** Notifications shown in the app and pushed to phones. Raising one never fails the caller. */
 export class AlertsService {
-  constructor(private db: Knex) {}
+  constructor(
+    private db: Knex,
+    private push: PushSettings = { url: '', token: '' }
+  ) {}
+
+  get pushEnabled(): boolean {
+    return this.push.url !== '';
+  }
+
+  /**
+   * Sends one push message. Failures are logged without the token or URL credentials and never
+   * reach the caller (the alert is already stored in the app).
+   */
+  async sendPush(title: string, severity: AlertSeverity): Promise<boolean> {
+    if (!this.pushEnabled) return false;
+    try {
+      const res = await fetch(this.push.url, {
+        method: 'POST',
+        headers: {
+          // Header values must be Latin-1; the full title goes in the UTF-8 body.
+          Title: 'Nuvytrix',
+          Priority: PUSH_PRIORITY[severity],
+          ...(this.push.token ? { Authorization: `Bearer ${this.push.token}` } : {}),
+        },
+        body: title,
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) logger.warn({ status: res.status }, 'Push notification rejected');
+      return res.ok;
+    } catch (err) {
+      logger.warn({ error: (err as Error).name }, 'Push notification not sent');
+      return false;
+    }
+  }
 
   async raise(
     kind: AlertKind,
@@ -75,6 +119,7 @@ export class AlertsService {
         key: key?.slice(0, 160) ?? null,
       });
       logger.info({ kind, title }, 'Alert raised');
+      void this.sendPush(safeTitle, severity);
     } catch (err) {
       logger.error({ err, kind }, 'Could not store alert');
     }

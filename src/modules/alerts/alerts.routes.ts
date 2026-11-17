@@ -32,6 +32,26 @@ router.get(
     res.json(await container.alertsService.list());
   })
 );
+/**
+ * @swagger
+ * /alerts/push-test:
+ *   post:
+ *     summary: Send a test push notification to subscribed phones
+ *     tags: [Alerts]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: "{ enabled, sent }" }
+ */
+router.post(
+  '/push-test',
+  asyncHandler(async (_req, res) => {
+    const service = container.alertsService;
+    res.json({
+      enabled: service.pushEnabled,
+      sent: await service.sendPush('Test notification from Nuvytrix', 'info'),
+    });
+  })
+);
 router.post(
   '/read-all',
   asyncHandler(async (_req, res) => {

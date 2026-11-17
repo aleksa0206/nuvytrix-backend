@@ -113,7 +113,7 @@ class ParentalRouter extends HuaweiWebClient {
         }
       }
     }
-    return this.render(form.readBack ?? form.page);
+    return this.render(form.readBack || form.page);
   }
 }
 

@@ -409,6 +409,9 @@ export interface DhcpServerState {
   leaseSeconds: number;
   /** DNS servers handed out by DHCP; empty means the router itself. */
   dnsServers: string[];
+  /** The L2 relay and option 125 flags as the page has them ('0'/'1'), re-sent unchanged. */
+  l2RelayFlag: string;
+  option125Flag: string;
 }
 
 /** dhcp2.asp (LAN > DHCP Server): the main pool. */
@@ -427,6 +430,8 @@ export function parseDhcpServer(page: string): DhcpServerState | null {
     endIp: main[3] ?? '',
     leaseSeconds: Number(main[4]),
     dnsServers: dns.split(',').filter(Boolean),
+    l2RelayFlag: main[5] ?? '',
+    option125Flag: main[17] ?? '',
   };
 }
 
