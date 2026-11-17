@@ -192,7 +192,11 @@ export class IntegrationsService {
         detail: 'DOCKER_PROXY_URL not set',
         error: null,
       };
-    const down = s.containers.filter((c) => c.state !== 'running' && !/migrate/.test(c.name));
+    // Compose services that should run; one-off migrate jobs and containers started by hand
+    // (no compose project, e.g. a VM image kept stopped) are not counted.
+    const down = s.containers.filter(
+      (c) => c.state !== 'running' && c.project !== null && c.service !== 'migrate'
+    );
     return {
       state: s.error ? ('error' as const) : down.length ? ('warning' as const) : ('ok' as const),
       lastSuccessAt: s.checkedAt,

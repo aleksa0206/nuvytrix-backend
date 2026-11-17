@@ -148,7 +148,7 @@ _Stanje 2026-11-16: upiti sa PC-ja rade, blokiranje radi, oporavak posle restart
 
 ## Faza 9 – Opciono i završno
 
-### NVX-22 – Procena CrowdSec-a (bez blokiranja) ⬜
+### NVX-22 – Procena CrowdSec-a (bez blokiranja) ✅
 **Opis:** Izmeriti resurse, proveriti logove (SSH, reverse proxy sajtova). Ako je bezbedno, instalirati samo detekciju i prikazati odluke u Nuvytrixu. Blokiranje traži posebno odobrenje.
 **Prihvatanje:** izveštaj o resursima; ako je instaliran: sajtovi rade, nema automatskih blokada.
 **Zavisi od:** NVX-13, NVX-21
