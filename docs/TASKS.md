@@ -139,7 +139,7 @@ _Stanje 2026-11-16: upiti sa PC-ja rade, blokiranje radi, oporavak posle restart
 **Prihvatanje:** ekran prikazuje stvarne fajlove; obaveštenje kad backup ne uspe ili kasni.
 **Zavisi od:** NVX-01
 
-### NVX-21 – Stanje integracija ⬜
+### NVX-21 – Stanje integracija ✅
 **Opis:** Jedan ekran: ruter, otkrivanje uređaja, DNS, AdGuard, Docker, PostgreSQL, SSH, backup, Tailscale. Za svaku: poslednja uspešna provera, trenutno stanje, poslednja greška.
 **Prihvatanje:** svaka integracija ima stvarnu proveru; greška u jednoj se vidi i ne obara ostale.
 **Zavisi od:** NVX-11, NVX-15, NVX-20

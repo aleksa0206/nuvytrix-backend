@@ -50,4 +50,22 @@ router.get(
   })
 );
 
+/**
+ * @swagger
+ * /integrations:
+ *   get:
+ *     summary: Health of every integration (router, discovery, port scans, monitoring, AdGuard, Docker, PostgreSQL, SSH log, backups, Tailscale)
+ *     description: Last success, current state (ok, warning, error, off) and the latest error for each.
+ *     tags: [Overview]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Integrations }
+ */
+router.get(
+  '/integrations',
+  asyncHandler(async (_req, res) => {
+    res.json(await container.integrationsService.list());
+  })
+);
+
 export default router;

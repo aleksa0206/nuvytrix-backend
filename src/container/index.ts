@@ -47,6 +47,7 @@ import { RouterIpv6Service } from '../modules/router/routerIpv6.service';
 import { AlertsService } from '../modules/alerts/alerts.service';
 import { AlertSettingsService } from '../modules/alerts/alertSettings.service';
 import { DockerMonitorService } from '../modules/docker/dockerMonitor.service';
+import { IntegrationsService } from '../modules/overview/integrations.service';
 import { BackupMonitorService, type BackupSettings } from '../modules/server/backupMonitor.service';
 import { SshMonitorService } from '../modules/security/sshMonitor.service';
 import {
@@ -79,6 +80,7 @@ class Container {
   public alertSettingsService: AlertSettingsService;
   public serverMonitorService: ServerMonitorService;
   public dockerMonitorService: DockerMonitorService;
+  public integrationsService!: IntegrationsService;
   public backupMonitorService: BackupMonitorService;
   public sshMonitorService: SshMonitorService;
 
@@ -303,6 +305,17 @@ class Container {
       protectedAddresses: env.ROUTER_PROTECTED_ADDRESSES,
     });
 
+    this.integrationsService = new IntegrationsService(db, {
+      router: this.routerService,
+      dns: this.dnsService,
+      docker: this.dockerMonitorService,
+      ssh: this.sshMonitorService,
+      backups: this.backupMonitorService,
+      server: this.serverMonitorService,
+      monitoring: this.monitoringService,
+      routerPollSeconds: env.ROUTER_POLL_SECONDS,
+      discoveryIntervalMinutes: env.DISCOVERY_INTERVAL_MINUTES,
+    });
     this.overviewService = new OverviewService(
       db,
       this.devicesService,
