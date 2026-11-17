@@ -108,12 +108,13 @@ Status: ⬜ nije počet · 🟨 u radu · ✅ gotovo · ⛔ čeka odobrenje
 **Prihvatanje:** vrednosti se poklapaju sa AdGuard UI-jem; izmene lista rade i upisuju se u audit.
 **Zavisi od:** NVX-14
 
-### NVX-16 – Test na jednom uređaju i zaštita od kvara ⬜
+### NVX-16 – Test na jednom uređaju i zaštita od kvara 🟨
+_Stanje 2026-11-16: upiti sa PC-ja rade, blokiranje radi, oporavak posle restarta i obaveštenje „DNS ne radi“ provereni, uputstvo u docs/adguard.md. Ostaje: jedan uređaj da koristi AdGuard ceo dan._
 **Opis:** Na jednom uređaju (npr. PC) ručno postaviti DNS na AdGuard; proveriti filtriranje i oporavak posle restarta kontejnera; obaveštenje „DNS ne radi“; uputstvo za povratak na stari DNS.
 **Prihvatanje:** uređaj radi kroz AdGuard bar jedan dan; obaveštenje radi; povratak opisan.
 **Zavisi od:** NVX-15
 
-### NVX-17 – Predlog DNS-a za celu kuću (bez izmene) ⬜
+### NVX-17 – Predlog DNS-a za celu kuću (bez izmene) ✅
 **Opis:** Istražiti zašto je ranija promena DHCP DNS-a na ruteru istekla, IPv6 DNS (ruter deli `fe80::1` preko DHCPv6, pa uređaji mogu da zaobiđu AdGuard), DoH/DoT, Android Private DNS, secure DNS u browserima i VPN-ove. Predlog sa tačnim koracima, povratkom i rizicima.
 **Prihvatanje:** dokument postoji; na ruteru ništa nije promenjeno.
 **Zavisi od:** NVX-16
