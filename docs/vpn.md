@@ -85,3 +85,9 @@ enp4s0 and delete the gateway's rules and table-51 LAN route; the home then went
 through Mullvad) until fixed. Since then the watchdog restores missing rules within 15 s, and
 `setup.sh` tells networkd to leave foreign rules and routes alone
 (`/etc/systemd/networkd.conf.d/60-nuvytrix-vpn.conf`).
+
+**Server DNS stays on AdGuard (2026-11-20 00:55):** systemd-resolved kept using the router (second
+server) after one AdGuard hiccup, so the server's own lookups, and those of phones on the exit
+node, skipped AdGuard. The watchdog now moves resolved back to AdGuard within 15 s whenever AdGuard
+answers (`dns_prefer_adguard` in gateway.sh). Tailscale DNS: nameserver 192.168.100.27 with "Use
+with exit node" (admin console), "Override DNS servers" off.
