@@ -121,6 +121,7 @@ _Stanje 2026-11-16: upiti sa PC-ja rade, blokiranje radi, oporavak posle restart
 
 ### NVX-18 – Promena DNS-a za celu kuću ⛔
 _2026-11-17: nije urađeno. Ruter čuva DNS samo zajedno sa celim DHCP-om (uključujući L2 relay i option 125); tačan zahtev je zapisan u docs/adguard.md. Čeka: jednodnevnu probu (NVX-16), pa test sa ruterom kao DNS-om, pa prelazak._
+_2026-11-19: urađeno u kodu, nije pokrenuto na ruteru. Router → DHCP ima dugme „Use AdGuard for all devices“ i povratak „DNS back to the router“ (`PUT /router/dhcp/dns`); šalje ceo DHCP obrazac sa pročitanim vrednostima, samo LAN adrese, provera čitanjem. Klik na dugme je odobrenje. Nalaz: ruterov IPv4 DNS ne odgovara od 2026-11-18 03:55 (IPv6 DNS `fe80::1` radi); dodat monitoring cilj „Router DNS (IPv4)“._
 **Opis:** Samo uz izričito odobrenje. Promeniti DNS u DHCP-u rutera na 192.168.100.27 (i IPv6 DNS po odluci), uz čitanje sa rutera posle promene, test na uređajima i spreman povratak.
 **Prihvatanje:** ruter stvarno prikazuje novi DNS; uređaji idu kroz AdGuard; povratak testiran.
 **Rizik:** visok (DNS cele kuće).
@@ -159,6 +160,20 @@ _2026-11-17: svih 10 integracija proverenih na serveru (backup upozorava za home
 **Opis:** Provera rutera, otkrivanja uređaja, obaveštenja, monitoringa, AdGuard-a, Docker-a, SSH-a, PostgreSQL-a, backup-a, Tailscale-a, svih 6 sajtova i Nuvytrixa. Ažurirati audit i `feature-parity.md`.
 **Prihvatanje:** sve provereno na serveru; konačan izveštaj (gotovo / delimično / HARDWARE_LIMITED).
 **Zavisi od:** svih prethodnih
+
+## Faza 10 – Dodatno (2026-11-19)
+
+### NVX-24 – Backup za homewise i portfolio ✅
+`~/homewise/backup.sh` i `~/portfolio/backup.sh` (mysqldump, 30 dana), cron 03:50 i 03:55. Noćni backupi 18. i 19.11. uspeli.
+
+### NVX-25 – Obaveštenja na telefon ✅ (čeka telefon)
+Sopstveni ntfy server (`deploy/ntfy`, docs/notifications.md), svaki alarm ide i na telefon, prijava obavezna. Proveren slanjem i čitanjem. Ostaje: Tailscale + ntfy aplikacija na telefonu, Settings → „Send test notification“.
+
+### NVX-26 – Restart rutera iz aplikacije 🟨
+Router → Maintenance: upisati `reboot`, dugme; samo ručno, 10 min pauza, audit pre slanja. Zahtev je ruterov „save and reboot“. Nije probano na ruteru (prekida internet i sajtove 2–3 min).
+
+### NVX-27 – Suženje SSH loga 🟨
+`deploy/ssh-log/setup.sh` (rsyslog kopija sshd linija u `/var/log/nuvytrix/sshd.log`). Ostaje: vlasnik pokreće skriptu sa `sudo`, zatim se mount u docker-compose.yml menja na `/var/log/nuvytrix`.
 
 ---
 
