@@ -1396,7 +1396,7 @@ router.put(
  * @swagger
  * /router/reboot:
  *   post:
- *     summary: Restart the router now ({ confirm: "reboot" }); never automatic
+ *     summary: 'Restart the router now ({ confirm: "reboot" }), never automatic'
  *     description: >
  *       Internet, Wi-Fi and the hosted sites are down for about 2-3 minutes. Refused within 10
  *       minutes of the previous request. Audited before sending.
