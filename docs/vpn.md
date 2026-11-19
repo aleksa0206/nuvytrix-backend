@@ -45,6 +45,7 @@ device -> switch -> server --(WireGuard, encrypted)--> switch -> router -> Orion
 - Tunnel: Mullvad Belgrade (rs-beg-wg-101), IPv4 only, no Mullvad DNS or content blocking (AdGuard does that), no Mullvad kill switch.
 - Admin PC test: `am.i.mullvad.net` says connected, path PC -> 192.168.100.27 -> 10.64.0.1 -> internet, about 310 Mbit/s download, 18 ms to 1.1.1.1.
 - IPv6 closed without touching the router: AdGuard -> DNS settings -> **Disable resolving of IPv6 addresses** (`disable_ipv6: true`). Devices get only IPv4 addresses for sites, so they cannot leave through the router's IPv6. Rollback: untick it.
+- Router IPv6 on the LAN turned off by the owner (00:30): LAN -> DHCPv6 Server -> **Enable Route Advertisement** unticked, nothing else changed. Checked: no IPv6 default route left on the server or the PC, so no device can leave around the tunnel over IPv6. The router's `fe80::1` stays listed as a DNS server until its advertised lifetime ends or the device reconnects; queries sent there skip AdGuard (no blocking, provider can see them) but still cannot open IPv6 connections. Rollback: tick it again, Apply.
 - AdGuard DHCP gateway changed from 192.168.100.1 to 192.168.100.27 (everything else unchanged). Devices move at lease renewal (up to a day) or Wi-Fi reconnect.
 - Nuvytrix: integrations line **Home VPN (Mullvad)** and the alert "VPN tunnel down: the home goes out directly through the provider" (once while it lasts, "is back" afterwards), from `/var/log/nuvytrix/vpn.json` (`VPN_STATE_FILE`), checked every 30 s.
 
