@@ -79,3 +79,9 @@ device -> switch -> server --(WireGuard, encrypted)--> switch -> router -> Orion
   on Wi-Fi).
 - **The server's own DNS**: AdGuard first, the router second (netplan), so the provider no longer
   sees the server's lookups while AdGuard runs.
+
+**Incident 2026-11-20 00:37:** `netplan try` (server DNS change) made systemd-networkd reconfigure
+enp4s0 and delete the gateway's rules and table-51 LAN route; the home then went out directly (not
+through Mullvad) until fixed. Since then the watchdog restores missing rules within 15 s, and
+`setup.sh` tells networkd to leave foreign rules and routes alone
+(`/etc/systemd/networkd.conf.d/60-nuvytrix-vpn.conf`).

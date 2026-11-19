@@ -94,12 +94,21 @@ net.ipv4.conf.enp4s0.send_redirects = 0
 EOF
 sysctl -q -p /etc/sysctl.d/60-nuvytrix-gateway.conf
 
+# systemd-networkd must not delete the gateway's routing rules and table routes when it reconfigures enp4s0.
+mkdir -p /etc/systemd/networkd.conf.d
+cat > /etc/systemd/networkd.conf.d/60-nuvytrix-vpn.conf <<'EOF'
+[Network]
+ManageForeignRoutingPolicyRules=no
+ManageForeignRoutes=no
+EOF
+
 ufw route allow in on enp4s0 out on mullvad from 192.168.100.0/24 comment 'Home through Mullvad' >/dev/null
 ufw route allow in on enp4s0 out on enp4s0 from 192.168.100.0/24 comment 'Home direct (tunnel down)' >/dev/null
 
 systemctl daemon-reload
 systemctl enable --now wg-quick@mullvad
 systemctl enable --now nuvytrix-vpn-gateway.service
+/usr/local/sbin/nuvytrix-vpn-gateway up
 systemctl enable --now nuvytrix-vpn-watchdog.timer
 sleep 5
 /usr/local/sbin/nuvytrix-vpn-gateway check

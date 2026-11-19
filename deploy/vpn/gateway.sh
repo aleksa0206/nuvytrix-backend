@@ -48,7 +48,7 @@ write_state() { # mode reason
   mv "$STATE.tmp" "$STATE"
 }
 
-up() {
+add_rules() {
   # Order: bypass devices (4000), LAN-to-LAN (4010), the rest of the forwarded LAN traffic (4020);
   # the tunnel's own address (4030, table 50: always the tunnel) for the watchdog's probes. Traffic to the server itself
   # is matched by the local table first and never reaches these rules.
@@ -63,10 +63,14 @@ up() {
   # Phones using the server as Tailscale exit node go out the same way (Tailscale masquerades
   # them itself); table 51 keeps the LAN route, so they still reach home devices.
   ip rule add priority 4025 iif tailscale0 lookup "$TABLE"
+  ip route replace "$LAN" dev "$IF" table "$TABLE"
   probe_route
+}
+
+up() {
+  add_rules
   # Start direct; the first check switches to the tunnel once it answers.
   ip route replace default via "$ROUTER" dev "$IF" table "$TABLE"
-  ip route replace "$LAN" dev "$IF" table "$TABLE"
 
   ipt nat POSTROUTING -s "$LAN" -o "$WG" -j MASQUERADE
   ipt nat POSTROUTING -s "$LAN" ! -d "$LAN" -o "$IF" -m addrtype ! --src-type LOCAL -j MASQUERADE
@@ -87,6 +91,12 @@ down() {
 check() {
   mkdir -p "$RUN"
   local w ok=0 hs now fails
+  # systemd-networkd removes rules it did not create when it reconfigures the link (e.g. netplan
+  # apply); put them back within one check.
+  if ! ip rule show priority 4020 | grep -q . || ! ip route show table "$TABLE" | grep -q "^$LAN"; then
+    add_rules
+    logger -t nuvytrix-vpn "routing rules were missing, restored"
+  fi
   probe_route
   w=$(wg_ip)
   now=$(date +%s)
