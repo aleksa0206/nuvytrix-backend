@@ -37,6 +37,8 @@ echo 'network: {config: disabled}' > /etc/cloud/cloud.cfg.d/99-nuvytrix-network.
 ufw allow in on enp4s0 from 192.168.100.0/24 to any port 53 comment 'AdGuard DNS'
 ufw allow in on enp4s0 to any port 67 proto udp comment 'AdGuard DHCP'
 ufw allow in on enp4s0 from 192.168.100.0/24 to any port 3000 proto tcp comment 'AdGuard admin'
+# IPv6 DNS on the server's link-local address (the router hands it out as the home's IPv6 DNS).
+ufw allow in on enp4s0 from fe80::/10 to any port 53 comment 'AdGuard DNS IPv6 link-local'
 
 echo
 echo "Applying the fixed address. Press ENTER when asked to keep it (SSH stays connected)."

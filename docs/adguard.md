@@ -93,6 +93,18 @@ AdGuardHome.yaml (not in git) would also expose DNS and the admin page on the Ta
 where Tailscale's own firewall chain accepts traffic before ufw. After every change Nuvytrix's setup
 step checks with `ss -lntup` that 53 and 3000 listen on 192.168.100.27 only.
 
+**Done 2026-11-19 (evening):** host setup run (fixed address; note: ufw is installed but
+**inactive** on this server, so its rules are on record only), AdGuard on the host network bound to
+192.168.100.27 and `fe80::7a84:3cff:fe04:c314%enp4s0` (the server's link-local address, derived
+from its MAC, so it does not change with the provider's prefix), AdGuard DHCP on (range .30–.254,
+admin PC static .2), router DHCP off. IPv6: router → LAN → DHCPv6 Server → DNS Source **Static**,
+preferred `fe80::7a84:3cff:fe04:c314` (Parent Prefix stays empty, as stored). Checked: the PC got
+.2 with DNS 192.168.100.27 from AdGuard and the new IPv6 DNS from the router; `doubleclick.net` is
+blocked over both. The router's `fe80::1` was still listed next to it right after the change (older
+advertisement still valid).
+
+IPv6 rollback: DHCPv6 Server → DNS Source back to **DNS agent**, Apply.
+
 **Rollback (one minute):** tick **Enable Primary DHCP Server** again on the router, Apply; turn
 AdGuard DHCP off (AdGuard → Settings → DHCP). Devices are back on the router at their next renewal or
 reconnect.

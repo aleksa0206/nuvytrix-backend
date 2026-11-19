@@ -121,6 +121,7 @@ _Stanje 2026-11-16: upiti sa PC-ja rade, blokiranje radi, oporavak posle restart
 
 ### NVX-18 – Promena DNS-a za celu kuću ⛔
 _2026-11-19: odobreno i probano, **nije moguće sa ovim nalogom**. Ruterova stranica zaključava DNS polja svakom nalogu osim provajderovog administratora (`IsAdminUser() == false`), a upis istekne bez promene. Ništa nije promenjeno; DHCP Relay (TV) netaknut. Dugme u Nuvytrixu uklonjeno. Ostaje: DNS po uređaju, ili zahtev provajderu. Detalji: docs/adguard.md._
+_2026-11-19 uveče: **urađeno drugim putem**: AdGuard je DHCP server kuće (ruterov DHCP isključen), a ruterov IPv6 DNS je statički na server (`fe80::7a84:3cff:fe04:c314`). Svaki uređaj dobija AdGuard sam, za IPv4 i IPv6. Povratak i provere: docs/adguard.md._
 _2026-11-17: nije urađeno. Ruter čuva DNS samo zajedno sa celim DHCP-om (uključujući L2 relay i option 125); tačan zahtev je zapisan u docs/adguard.md. Čeka: jednodnevnu probu (NVX-16), pa test sa ruterom kao DNS-om, pa prelazak._
 _2026-11-19: urađeno u kodu, nije pokrenuto na ruteru. Router → DHCP ima dugme „Use AdGuard for all devices“ i povratak „DNS back to the router“ (`PUT /router/dhcp/dns`); šalje ceo DHCP obrazac sa pročitanim vrednostima, samo LAN adrese, provera čitanjem. Klik na dugme je odobrenje. Nalaz: ruterov IPv4 DNS ne odgovara od 2026-11-18 03:55 (IPv6 DNS `fe80::1` radi); dodat monitoring cilj „Router DNS (IPv4)“._
 **Opis:** Samo uz izričito odobrenje. Promeniti DNS u DHCP-u rutera na 192.168.100.27 (i IPv6 DNS po odluci), uz čitanje sa rutera posle promene, test na uređajima i spreman povratak.
