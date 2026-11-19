@@ -34,3 +34,10 @@ after 3 minutes unless the owner confirms from a new SSH session that access sti
 
 `sudo ufw disable` (from the server's keyboard, LAN SSH or Tailscale). The previous rules are kept
 by ufw as backups in `/etc/ufw/*.rules.<date>`.
+
+## Done 2026-11-19 (21:36)
+
+Turned on by the owner, confirmed from a new SSH session. Checked right after: all 11 monitoring
+targets up (six sites HTTP 200 through their tunnels, Nuvytrix, AdGuard DNS, router, internet),
+`doubleclick.net` still blocked from the PC, AdGuard admin reachable on the LAN, no new alerts. The
+only blocked packets: the router sending UDP to ports 1024/1025, where nothing listens.

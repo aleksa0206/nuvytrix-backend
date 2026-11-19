@@ -3,6 +3,10 @@
 Redosled je redosled rada. „Zavisi od“ kaže šta mora biti gotovo pre taska.
 Status: ⬜ nije počet · 🟨 u radu · ✅ gotovo · ⛔ čeka odobrenje
 
+
+### NVX-29 – Firewall na serveru ✅
+ufw uključen 2026-11-19 (`deploy/firewall/ufw-setup.sh`, docs/firewall.md): otvoreni samo SSH (LAN, Tailscale), Tailscale, AdGuard DNS/DHCP/admin na LAN-u i web → API. Sajtovi idu kroz Cloudflare tunele, ništa im ne treba. Provereno: svih 11 ciljeva radi.
+
 ---
 
 ## Faza 1 – Audit
