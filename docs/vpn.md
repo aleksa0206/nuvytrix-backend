@@ -37,16 +37,16 @@ device -> switch -> server --(WireGuard, encrypted)--> switch -> router -> Orion
 | 1 | owner | Mullvad account, WireGuard config (Linux), `scp` it to `~/mullvad.conf` | none |
 | 2 | owner | `sudo bash ~/nuvytrix/nuvytrix-backend/deploy/vpn/setup.sh`: must print `You are connected to Mullvad` | none |
 | 3 | owner + Claude | Admin PC only: `route change 0.0.0.0 mask 0.0.0.0 192.168.100.27` (admin cmd, temporary), check am.i.mullvad.net, sites, speed | the PC |
-| 4 | owner + Claude | IPv6: devices get a direct IPv6 route from the router, which would bypass the tunnel; turn off IPv6 address assignment on the router's LAN | all (IPv4 only on the LAN) |
+| 4 | Claude | IPv6: devices get a direct IPv6 route from the router, which would bypass the tunnel; closed in AdGuard instead (no IPv6 addresses for sites, see below) | all |
 | 5 | Claude | AdGuard DHCP gateway 192.168.100.1 -> 192.168.100.27; devices follow at lease renewal or Wi-Fi reconnect | all |
 
 ## Done 2026-11-20 (00:10)
 
 - Tunnel: Mullvad Belgrade (rs-beg-wg-101), IPv4 only, no Mullvad DNS or content blocking (AdGuard does that), no Mullvad kill switch.
-- Admin PC test:  says connected, path PC -> 192.168.100.27 -> 10.64.0.1 -> internet, about 310 Mbit/s download, 18 ms to 1.1.1.1.
-- IPv6 closed without touching the router: AdGuard -> DNS settings -> **Disable resolving of IPv6 addresses** (). Devices get only IPv4 addresses for sites, so they cannot leave through the router's IPv6. Rollback: untick it.
+- Admin PC test: `am.i.mullvad.net` says connected, path PC -> 192.168.100.27 -> 10.64.0.1 -> internet, about 310 Mbit/s download, 18 ms to 1.1.1.1.
+- IPv6 closed without touching the router: AdGuard -> DNS settings -> **Disable resolving of IPv6 addresses** (`disable_ipv6: true`). Devices get only IPv4 addresses for sites, so they cannot leave through the router's IPv6. Rollback: untick it.
 - AdGuard DHCP gateway changed from 192.168.100.1 to 192.168.100.27 (everything else unchanged). Devices move at lease renewal (up to a day) or Wi-Fi reconnect.
-- Nuvytrix: integrations line **Home VPN (Mullvad)** and the alert "VPN tunnel down: the home goes out directly through the provider" (once while it lasts, "is back" afterwards), from  (), checked every 30 s.
+- Nuvytrix: integrations line **Home VPN (Mullvad)** and the alert "VPN tunnel down: the home goes out directly through the provider" (once while it lasts, "is back" afterwards), from `/var/log/nuvytrix/vpn.json` (`VPN_STATE_FILE`), checked every 30 s.
 
 ## Rollback
 
