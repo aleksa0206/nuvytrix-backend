@@ -36,13 +36,14 @@ services:
     # Read-only: the backup disk, so the Server page can report its usage and Nuvytrix can list
     # the backup files. /proc and /sys of the host are visible without mounts (host networking,
     # no privileges needed).
-    # adm (gid 4) may read the host's auth.log (syslog:adm 0640); nothing else is granted.
+    # adm (gid 4) may read sshd.log (syslog:adm 0640); nothing else is granted.
     group_add:
       - '4'
     volumes:
       - /mnt/data:/host/mnt/data:ro
-      # The whole directory, because logrotate replaces auth.log with a new file.
-      - /var/log:/host/var/log:ro
+      # Only sshd's lines (rsyslog copy, deploy/ssh-log/setup.sh), not all of /var/log. The
+      # directory, because logrotate replaces sshd.log with a new file.
+      - /var/log/nuvytrix:/host/var/log/nuvytrix:ro
     env_file: .env
     environment:
       NODE_ENV: production
@@ -54,7 +55,7 @@ services:
       TRUST_PROXY: 172.31.250.0/29
       # The read-only Docker API proxy below, reachable from the host network only.
       DOCKER_PROXY_URL: http://127.0.0.1:2375
-      SSH_AUTH_LOG: /host/var/log/auth.log
+      SSH_AUTH_LOG: /host/var/log/nuvytrix/sshd.log
       BACKUP_DIR: /host/mnt/data/backups
       # Every project with a database; ones without a backup job show up as missing.
       BACKUP_EXPECTED: nuvytrix,staffaway,remly,focentra,veltris,homewise,portfolio

@@ -258,7 +258,7 @@ export class IntegrationsService {
     return {
       state: h.error ? ('error' as const) : h.lastRun ? ('ok' as const) : ('warning' as const),
       lastSuccessAt: h.lastRun,
-      detail: 'auth.log, read-only, every minute',
+      detail: 'sshd log, read-only, every minute',
       error: h.error?.message ?? null,
     };
   }

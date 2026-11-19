@@ -134,8 +134,8 @@ With 4.4 GiB available the server has room; the six MySQL instances remain the l
 7. **SSH log access is broader than needed** — the API container mounts `/var/log` read-only with the
    `adm` group, so it could read other adm-readable logs (syslog, kern.log), not only auth.log.
    Narrowing it needs root on the server: an rsyslog rule writing `sshd` messages to a dedicated
-   file and group, rotated in place, and mounting only that file. Not done (no sudo for Nuvytrix).
-6. **Backup gap** — homewise and portfolio databases are not backed up (outside Nuvytrix; reported).
+   file and group, rotated in place, and mounting only that file. **Done 2026-11-19:** the API mounts only `/var/log/nuvytrix` (sshd.log), see deploy/ssh-log/setup.sh.
+6. **Backup gap** — homewise and portfolio databases are not backed up (outside Nuvytrix; reported). **Done 2026-11-19** (NVX-24).
 
 ## 5. Plan
 
@@ -166,5 +166,5 @@ alerts, backups and integration health (19–21), CrowdSec evaluation (22), fina
 | CrowdSec | EVALUATED, not installed | `docs/crowdsec-evaluation.md` |
 | Per-device bandwidth, switch VLAN/SNMP/port statistics/mirroring/PoE, packet inspection | HARDWARE_LIMITED | unmanaged TL-SG1008D |
 
-Open findings for the owner: homewise and portfolio databases have no backup job; the
-`/var/log` mount is broader than needed until rsyslog writes sshd messages to their own file.
+Both open findings (homewise/portfolio backups; the broad
+`/var/log` mount) were closed on 2026-11-19 (NVX-24, NVX-27).
