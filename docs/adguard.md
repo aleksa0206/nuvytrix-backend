@@ -88,6 +88,11 @@ device that joins gets AdGuard as DNS by itself.
 | 3 | Claude | AdGuard DHCP configured, still off: enp4s0, gateway 192.168.100.1, /24, range .30–.254, lease 1 day; the admin PC keeps .2 as a static lease |
 | 4 | owner + Claude, together, TV on | router: LAN → DHCP Server, untick **Enable Primary DHCP Server**, Apply; AdGuard DHCP on right after; check the TV, reconnect a phone |
 
+**Binding is checked, not assumed:** on the host network, a setting of `0.0.0.0` in
+AdGuardHome.yaml (not in git) would also expose DNS and the admin page on the Tailscale address,
+where Tailscale's own firewall chain accepts traffic before ufw. After every change Nuvytrix's setup
+step checks with `ss -lntup` that 53 and 3000 listen on 192.168.100.27 only.
+
 **Rollback (one minute):** tick **Enable Primary DHCP Server** again on the router, Apply; turn
 AdGuard DHCP off (AdGuard → Settings → DHCP). Devices are back on the router at their next renewal or
 reconnect.
