@@ -169,8 +169,8 @@ _2026-11-17: svih 10 integracija proverenih na serveru (backup upozorava za home
 ### NVX-25 – Obaveštenja na telefon ✅ (čeka telefon)
 Sopstveni ntfy server (`deploy/ntfy`, docs/notifications.md), svaki alarm ide i na telefon, prijava obavezna. Proveren slanjem i čitanjem. Ostaje: Tailscale + ntfy aplikacija na telefonu, Settings → „Send test notification“.
 
-### NVX-26 – Restart rutera iz aplikacije 🟨
-Router → Maintenance: upisati `reboot`, dugme; samo ručno, 10 min pauza, audit pre slanja. Zahtev je ruterov „save and reboot“. Nije probano na ruteru (prekida internet i sajtove 2–3 min).
+### NVX-26 – Restart rutera iz aplikacije ✅
+Router → Maintenance: upisati `reboot`, dugme; samo ručno, 10 min pauza, audit pre slanja. Zahtev je ruterov „save and reboot“. Probano 2026-11-19 16:49 (audit `requested` → `sent_no_answer`): ruter se vratio za ~1 min, ruterov IPv4 DNS (ne radio od 18.11. 03:55) ponovo radi, svih 6 sajtova HTTP 200 nakon ~2 min.
 
 ### NVX-27 – Suženje SSH loga 🟨
 `deploy/ssh-log/setup.sh` (rsyslog kopija sshd linija u `/var/log/nuvytrix/sshd.log`). Ostaje: vlasnik pokreće skriptu sa `sudo`, zatim se mount u docker-compose.yml menja na `/var/log/nuvytrix`.
