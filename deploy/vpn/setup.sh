@@ -108,4 +108,5 @@ echo
 echo "Tunnel check (the server's own traffic still goes direct; this asks through the tunnel):"
 curl -s --max-time 10 --interface "${ADDR%/*}" https://am.i.mullvad.net/connected || echo "no answer through the tunnel"
 echo
+systemctl is-active --quiet nuvytrix-vpn-gateway || { echo "ABORT: nuvytrix-vpn-gateway did not start: journalctl -u nuvytrix-vpn-gateway"; exit 1; }
 echo "ok: tunnel and gateway ready. No device uses it yet (gateway in AdGuard DHCP is still the router)."

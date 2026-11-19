@@ -9,7 +9,6 @@ set -euo pipefail
 LAN=192.168.100.0/24
 IF=enp4s0
 ROUTER=192.168.100.1
-SERVER=192.168.100.27
 WG=mullvad
 TABLE=51
 PROBE_TABLE=50 # always the tunnel: probes must never leave unencrypted
@@ -67,7 +66,7 @@ up() {
   ip route replace "$LAN" dev "$IF" table "$TABLE"
 
   ipt nat POSTROUTING -s "$LAN" -o "$WG" -j MASQUERADE
-  ipt nat POSTROUTING -s "$LAN" ! -s "$SERVER" ! -d "$LAN" -o "$IF" -j MASQUERADE
+  ipt nat POSTROUTING -s "$LAN" ! -d "$LAN" -o "$IF" -m addrtype ! --src-type LOCAL -j MASQUERADE
   ipt mangle FORWARD -o "$WG" -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
   write_state direct "starting"
 }
@@ -77,7 +76,7 @@ down() {
   ip route flush table "$TABLE" 2>/dev/null || true
   ip route flush table "$PROBE_TABLE" 2>/dev/null || true
   iptd nat POSTROUTING -s "$LAN" -o "$WG" -j MASQUERADE
-  iptd nat POSTROUTING -s "$LAN" ! -s "$SERVER" ! -d "$LAN" -o "$IF" -j MASQUERADE
+  iptd nat POSTROUTING -s "$LAN" ! -d "$LAN" -o "$IF" -m addrtype ! --src-type LOCAL -j MASQUERADE
   iptd mangle FORWARD -o "$WG" -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
   write_state off "gateway stopped"
 }
