@@ -15,7 +15,7 @@
 | Logs | query log and statistics kept 7 days (household privacy: every DNS name a device asks for is recorded) |
 | Restart | `restart: unless-stopped`; health check resolves through itself every 30 s |
 
-The server itself keeps using the router as its DNS, so it never depends on its own container.
+The server itself resolves through AdGuard first and the router second (since 2026-11-20, deploy/vpn/phone-and-dns.sh), so it still resolves names when AdGuard is down.
 
 ## In Nuvytrix (NVX-15)
 

@@ -26,9 +26,9 @@ network:
       routes:
         - to: default
           via: 192.168.100.1
-      # The server keeps resolving through the router, never through its own container.
+      # AdGuard first (encrypted upstreams); the router second, for when AdGuard is down.
       nameservers:
-        addresses: [192.168.100.1]
+        addresses: [192.168.100.27, 192.168.100.1]
 CONF
 chmod 600 /etc/netplan/60-nuvytrix-static.yaml
 # cloud-init must not rewrite the network config on the next boot.

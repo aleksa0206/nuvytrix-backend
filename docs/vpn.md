@@ -65,3 +65,17 @@ device -> switch -> server --(WireGuard, encrypted)--> switch -> router -> Orion
 - Some services block VPN addresses (banks, streaming catalogues, games): such a device goes in the
   bypass list.
 - Sites see Mullvad's address and country, not the home's.
+
+## Additions 2026-11-20
+
+- **Lease 2 hours** (was 1 day) in AdGuard DHCP: after a rollback of the gateway, devices follow
+  within 2 hours by themselves.
+- **Phone away from home** (`deploy/vpn/phone-and-dns.sh`): the server offers itself as a Tailscale
+  exit node. Its traffic arrives on `tailscale0`, rule 4025 sends it through table 51 like the
+  home's (Mullvad, or direct while the tunnel is down; Tailscale masquerades it). DNS of an exit
+  node client goes to the server's resolver, which is AdGuard. One-time approval in the Tailscale
+  admin console: Machines -> aleksa -> Edit route settings -> Use as exit node. On the phone:
+  Tailscale -> Exit node -> aleksa (with "Allow local network access" so home devices stay reachable
+  on Wi-Fi).
+- **The server's own DNS**: AdGuard first, the router second (netplan), so the provider no longer
+  sees the server's lookups while AdGuard runs.

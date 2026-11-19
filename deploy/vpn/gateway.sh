@@ -52,7 +52,7 @@ up() {
   # Order: bypass devices (4000), LAN-to-LAN (4010), the rest of the forwarded LAN traffic (4020);
   # the tunnel's own address (4030, table 50: always the tunnel) for the watchdog's probes. Traffic to the server itself
   # is matched by the local table first and never reaches these rules.
-  rules_flush 4000; rules_flush 4010; rules_flush 4020; rules_flush 4030
+  rules_flush 4000; rules_flush 4010; rules_flush 4020; rules_flush 4025; rules_flush 4030
   if [ -f "$BYPASS" ]; then
     grep -Eo '^192\.168\.100\.[0-9]{1,3}' "$BYPASS" | while read -r ip; do
       ip rule add priority 4000 iif "$IF" from "$ip" lookup main
@@ -60,6 +60,9 @@ up() {
   fi
   ip rule add priority 4010 iif "$IF" from "$LAN" to "$LAN" lookup main
   ip rule add priority 4020 iif "$IF" from "$LAN" lookup "$TABLE"
+  # Phones using the server as Tailscale exit node go out the same way (Tailscale masquerades
+  # them itself); table 51 keeps the LAN route, so they still reach home devices.
+  ip rule add priority 4025 iif tailscale0 lookup "$TABLE"
   probe_route
   # Start direct; the first check switches to the tunnel once it answers.
   ip route replace default via "$ROUTER" dev "$IF" table "$TABLE"
@@ -72,7 +75,7 @@ up() {
 }
 
 down() {
-  rules_flush 4000; rules_flush 4010; rules_flush 4020; rules_flush 4030
+  rules_flush 4000; rules_flush 4010; rules_flush 4020; rules_flush 4025; rules_flush 4030
   ip route flush table "$TABLE" 2>/dev/null || true
   ip route flush table "$PROBE_TABLE" 2>/dev/null || true
   iptd nat POSTROUTING -s "$LAN" -o "$WG" -j MASQUERADE
