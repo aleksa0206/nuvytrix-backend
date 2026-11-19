@@ -183,6 +183,9 @@ Od 2026-11-19 adrese deli AdGuard (ruterov DHCP isključen). Router → DHCP pri
 ### NVX-29 – Firewall na serveru ✅
 ufw uključen 2026-11-19 (`deploy/firewall/ufw-setup.sh`, docs/firewall.md): otvoreni samo SSH (LAN, Tailscale), Tailscale, AdGuard DNS/DHCP/admin na LAN-u i web → API. Sajtovi idu kroz Cloudflare tunele, ništa im ne treba. Provereno: svih 11 ciljeva radi.
 
+### NVX-30 – VPN za celu kuću (Mullvad) ✅
+Server je izlaz kuće na internet kroz Mullvad (Beograd), provajder vidi samo tunel (`deploy/vpn`, docs/vpn.md). Ako tunel padne, kuća za ~45 s ide direktno (izbor vlasnika), alarm u Nuvytrix-u. IPv6 zatvoren u AdGuard-u (bez IPv6 adresa sajtova), AdGuard DHCP daje server kao gateway od 2026-11-20 00:10. Proba na PC-ju: ~310 Mbit/s.
+
 ---
 
 **HARDWARE_LIMITED, ne radimo:** VLAN-ovi, SNMP, statistika po portu, port mirroring, PoE na switch-u, protok po uređaju, pregled paketa (TL-SG1008D je neupravljiv).

@@ -28,7 +28,9 @@ export type AlertKind =
   | 'high_latency'
   | 'backup_failed'
   | 'dhcp_off'
-  | 'dhcp_on';
+  | 'dhcp_on'
+  | 'vpn_direct'
+  | 'vpn_restored';
 export type AlertSeverity = 'info' | 'warning' | 'error';
 
 interface AlertRow {

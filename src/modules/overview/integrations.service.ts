@@ -6,6 +6,7 @@ import type { MonitoringService } from '../monitoring/monitoring.service';
 import type { RouterService } from '../router/router.service';
 import type { SshMonitorService } from '../security/sshMonitor.service';
 import type { BackupMonitorService } from '../server/backupMonitor.service';
+import type { VpnMonitorService } from '../server/vpnMonitor.service';
 import type { ServerMonitorService } from '../server/serverMonitor.service';
 
 export type IntegrationState = 'ok' | 'warning' | 'error' | 'off';
@@ -35,6 +36,7 @@ export class IntegrationsService {
       docker: DockerMonitorService;
       ssh: SshMonitorService;
       backups: BackupMonitorService;
+      vpn: VpnMonitorService;
       server: ServerMonitorService;
       monitoring: MonitoringService;
       routerPollSeconds: number;
@@ -54,6 +56,7 @@ export class IntegrationsService {
       ['PostgreSQL', async () => this.postgres()],
       ['SSH log', async () => this.sshLog()],
       ['Backups', async () => this.backups()],
+      ['Home VPN (Mullvad)', async () => this.vpn()],
       ['Tailscale', async () => this.tailscale()],
     ];
     return Promise.all(
@@ -278,6 +281,37 @@ export class IntegrationsService {
       lastSuccessAt: s.checkedAt,
       detail: `${s.projects.length - bad.length}/${s.projects.length} projects backed up`,
       error: s.error ?? (bad.length ? bad.map((p) => `${p.project}: ${p.state}`).join(', ') : null),
+    };
+  }
+
+  private vpn() {
+    const v = this.deps.vpn;
+    if (!v.enabled)
+      return {
+        state: 'off' as const,
+        lastSuccessAt: null,
+        detail: 'VPN_STATE_FILE not set',
+        error: null,
+      };
+    const l = v.last;
+    if (!l?.state)
+      return {
+        state: 'error' as const,
+        lastSuccessAt: null,
+        detail: 'no state from the watchdog',
+        error: l?.error ?? null,
+      };
+    const s = l.state;
+    return {
+      state: l.stale || s.mode !== 'vpn' ? ('warning' as const) : ('ok' as const),
+      lastSuccessAt: new Date(s.checkedAt),
+      detail:
+        s.mode === 'vpn'
+          ? 'home traffic through Mullvad'
+          : s.mode === 'direct'
+            ? 'tunnel down, home goes out directly'
+            : 'gateway stopped',
+      error: l.stale ? 'Watchdog stopped writing its state' : s.mode === 'vpn' ? null : s.reason,
     };
   }
 

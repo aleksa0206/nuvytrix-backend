@@ -50,6 +50,7 @@ import { AlertSettingsService } from '../modules/alerts/alertSettings.service';
 import { DockerMonitorService } from '../modules/docker/dockerMonitor.service';
 import { IntegrationsService } from '../modules/overview/integrations.service';
 import { BackupMonitorService, type BackupSettings } from '../modules/server/backupMonitor.service';
+import { VpnMonitorService } from '../modules/server/vpnMonitor.service';
 import { SshMonitorService } from '../modules/security/sshMonitor.service';
 import {
   ServerMonitorService,
@@ -71,6 +72,7 @@ export interface ContainerOverrides {
   dockerProxyUrl?: string;
   portScanner?: PortScanner;
   sshAuthLog?: string;
+  vpnStateFile?: string;
   backups?: BackupSettings;
   upnpClient?: UpnpClient;
 }
@@ -84,6 +86,7 @@ class Container {
   public dockerMonitorService: DockerMonitorService;
   public integrationsService!: IntegrationsService;
   public backupMonitorService: BackupMonitorService;
+  public vpnMonitorService: VpnMonitorService;
   public sshMonitorService: SshMonitorService;
 
   public authRepository: AuthRepository;
@@ -145,6 +148,10 @@ class Container {
       overrides.backups ?? { dir: env.BACKUP_DIR, expected: env.BACKUP_EXPECTED },
       this.alertsService,
       this.alertSettingsService
+    );
+    this.vpnMonitorService = new VpnMonitorService(
+      overrides.vpnStateFile ?? env.VPN_STATE_FILE,
+      this.alertsService
     );
     this.dockerMonitorService = new DockerMonitorService(
       { baseUrl: overrides.dockerProxyUrl ?? env.DOCKER_PROXY_URL, token: env.DOCKER_PROXY_TOKEN },
@@ -327,6 +334,7 @@ class Container {
       docker: this.dockerMonitorService,
       ssh: this.sshMonitorService,
       backups: this.backupMonitorService,
+      vpn: this.vpnMonitorService,
       server: this.serverMonitorService,
       monitoring: this.monitoringService,
       routerPollSeconds: env.ROUTER_POLL_SECONDS,

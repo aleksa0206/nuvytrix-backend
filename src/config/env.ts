@@ -98,6 +98,8 @@ const envSchema = z.object({
   DOCKER_PROXY_TOKEN: z.string().default(''),
   // The host's auth.log mounted read-only (see docker-compose.yml); empty turns SSH monitoring off.
   SSH_AUTH_LOG: z.string().default(''),
+  // State file of the home VPN gateway's watchdog (deploy/vpn), read-only; empty turns it off.
+  VPN_STATE_FILE: z.string().default(''),
   // Backup directory mounted read-only, and the projects that should have backups (comma separated).
   BACKUP_DIR: z.string().default(''),
   BACKUP_EXPECTED: z

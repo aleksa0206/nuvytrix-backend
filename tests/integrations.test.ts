@@ -45,6 +45,7 @@ describe('integration health', () => {
       'PostgreSQL',
       'SSH log',
       'Backups',
+      'Home VPN (Mullvad)',
       'Tailscale',
     ]);
     expect(byName['Network discovery']).toMatchObject({ state: 'error', error: 'nmap timed out' });

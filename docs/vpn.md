@@ -40,6 +40,14 @@ device -> switch -> server --(WireGuard, encrypted)--> switch -> router -> Orion
 | 4 | owner + Claude | IPv6: devices get a direct IPv6 route from the router, which would bypass the tunnel; turn off IPv6 address assignment on the router's LAN | all (IPv4 only on the LAN) |
 | 5 | Claude | AdGuard DHCP gateway 192.168.100.1 -> 192.168.100.27; devices follow at lease renewal or Wi-Fi reconnect | all |
 
+## Done 2026-11-20 (00:10)
+
+- Tunnel: Mullvad Belgrade (rs-beg-wg-101), IPv4 only, no Mullvad DNS or content blocking (AdGuard does that), no Mullvad kill switch.
+- Admin PC test:  says connected, path PC -> 192.168.100.27 -> 10.64.0.1 -> internet, about 310 Mbit/s download, 18 ms to 1.1.1.1.
+- IPv6 closed without touching the router: AdGuard -> DNS settings -> **Disable resolving of IPv6 addresses** (). Devices get only IPv4 addresses for sites, so they cannot leave through the router's IPv6. Rollback: untick it.
+- AdGuard DHCP gateway changed from 192.168.100.1 to 192.168.100.27 (everything else unchanged). Devices move at lease renewal (up to a day) or Wi-Fi reconnect.
+- Nuvytrix: integrations line **Home VPN (Mullvad)** and the alert "VPN tunnel down: the home goes out directly through the provider" (once while it lasts, "is back" afterwards), from  (), checked every 30 s.
+
 ## Rollback
 
 - One device: put its address in `/etc/nuvytrix-vpn-bypass`, then `sudo nuvytrix-vpn-gateway up`.
