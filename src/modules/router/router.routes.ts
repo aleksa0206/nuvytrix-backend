@@ -12,7 +12,7 @@ import {
   ipFilterSettingsSchema,
   ruleIndexSchema,
 } from './routerFirewall.schema';
-import { dhcpDnsSchema, dhcpReservationSchema, dhcpServerSchema } from './routerDhcp.schema';
+import { dhcpReservationSchema, dhcpServerSchema } from './routerDhcp.schema';
 import {
   macFilterEntryParamsSchema,
   macFilterEntrySchema,
@@ -350,31 +350,6 @@ router.patch(
   validateBody(dhcpServerSchema),
   asyncHandler(async (req, res) => {
     const result = await container.routerDhcpService.changeServer(
-      req.body,
-      req.admin!.adminId,
-      requestContext(req)
-    );
-    res.json(result.state);
-  })
-);
-/**
- * @swagger
- * /router/dhcp/dns:
- *   put:
- *     summary: DNS servers handed out by DHCP ({ servers }, LAN addresses, empty = the router)
- *     description: >
- *       Re-sends the main pool form with every other value unchanged and verifies by reading back.
- *       Devices pick the change up when their lease renews. Audited.
- *     tags: [Router]
- *     security: [{ cookieAuth: [] }]
- *     responses:
- *       200: { description: DHCP server state after the change }
- */
-router.put(
-  '/dhcp/dns',
-  validateBody(dhcpDnsSchema),
-  asyncHandler(async (req, res) => {
-    const result = await container.routerDhcpService.changeDns(
       req.body,
       req.admin!.adminId,
       requestContext(req)

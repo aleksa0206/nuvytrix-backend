@@ -56,7 +56,6 @@ class DhcpRouter extends HuaweiWebClient {
           end: f['z.MaxAddress']!,
           lease: f['z.DHCPLeaseTime']!,
         };
-        if ('z.X_HW_DNSList' in f) this.dns = f['z.X_HW_DNSList']!;
       } else if (form.action === 'add') {
         this.reservations.set(this.next++, { ip: f['x.Yiaddr']!, mac: f['x.Chaddr']! });
       } else if (form.action === 'set') {
@@ -118,48 +117,6 @@ describe('router DHCP management', () => {
   beforeEach(async () => {
     await prepareDatabase();
     setup();
-  });
-
-  it('changes the DNS list re-sending every other pool value unchanged, and back', async () => {
-    const agent = await signedInAgent();
-
-    const set = await agent.put('/api/router/dhcp/dns').send({ servers: ['192.168.100.27'] });
-    const back = await agent.put('/api/router/dhcp/dns').send({ servers: [] });
-
-    expect(set.status).toBe(200);
-    expect(set.body.dnsServers).toEqual(['192.168.100.27']);
-    expect(back.body.dnsServers).toEqual([]);
-    expect(router.submissions[0]).toMatchObject({
-      page: 'dhcpServer',
-      objectKey: 'z',
-      object: HOST,
-      fields: {
-        'z.DHCPServerEnable': '1',
-        'z.X_HW_DHCPL2RelayEnable': '1',
-        'z.X_HW_Option125Enable': '1',
-        'z.X_HW_DNSList': '192.168.100.27',
-        'z.MinAddress': '192.168.100.2',
-        'z.MaxAddress': '192.168.100.254',
-        'z.DHCPLeaseTime': '86400',
-      },
-    });
-    const audits = await db('audit_logs').where({ action: 'router.dhcp_dns_changed' });
-    expect(audits.map((a) => a.details.outcome)).toEqual(['applied', 'applied']);
-  });
-
-  it('refuses DNS servers outside the LAN and changes the router ignored', async () => {
-    const agent = await signedInAgent();
-    const outside = await agent.put('/api/router/dhcp/dns').send({ servers: ['1.1.1.1'] });
-    const three = await agent
-      .put('/api/router/dhcp/dns')
-      .send({ servers: ['192.168.100.27', '192.168.100.1', '192.168.100.3'] });
-    router.ignoreWrites = true;
-    const ignored = await agent.put('/api/router/dhcp/dns').send({ servers: ['192.168.100.27'] });
-
-    expect(outside.status).toBe(422);
-    expect(three.status).toBe(400);
-    expect(ignored.status).toBe(502);
-    expect(router.submissions).toHaveLength(1);
   });
 
   it('reads the pool and the reservations', async () => {

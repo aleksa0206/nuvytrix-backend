@@ -36,14 +36,5 @@ export const dhcpServerSchema = z
     message: 'The end address must not be lower than the start address',
   });
 
-/** Up to two DNS servers for DHCP clients; an empty list hands out the router itself. */
-export const dhcpDnsSchema = z.object({
-  servers: z
-    .array(ipv4)
-    .max(2)
-    .refine((list) => new Set(list).size === list.length, 'List each server once'),
-});
-
-export type DhcpDnsInput = z.infer<typeof dhcpDnsSchema>;
 export type DhcpReservationInput = z.infer<typeof dhcpReservationSchema>;
 export type DhcpServerInput = z.infer<typeof dhcpServerSchema>;

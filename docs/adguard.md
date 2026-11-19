@@ -59,6 +59,23 @@ bypass the filter. This is a known limitation of the current hardware, not a con
 | VPN apps | DNS goes through the VPN. | No. |
 | Devices with static DNS settings | Unaffected by DHCP. | Change them on the device. |
 
+## Whole-home DNS through the router: not possible with this account (2026-11-19)
+
+The owner approved the switch on 2026-11-19. The full main-pool form with every value re-sent
+unchanged and `z.X_HW_DNSList=192.168.100.27` timed out after 40 s, and the read-back showed nothing
+changed (the same as on 2026-11-16). The reason is in the page itself: `LoadFrame()` of dhcp2.asp
+runs `if ((IsAdminUser() == false) && (IsSonetUser() == false)) setDisable("dnsMainPri", 1)`, so the
+DNS fields are locked for the account Nuvytrix and the owner use; only the provider's administrator
+account may set them. The DHCP L2 relay (used by the TV ports) is unrelated and stays on.
+
+What remains possible:
+
+- **Per device:** set DNS `192.168.100.27` on the phones and computers that matter (Wi-Fi settings of
+  the home network only; mobile data and other networks are unaffected).
+- **Ask the provider** to set the DHCP DNS, or for administrator access.
+
+The Nuvytrix switch for this (added 2026-11-17) was removed again, since it can never succeed here.
+
 ## Whole-home DNS proposal (NVX-17, not applied)
 
 Target: every DHCP client gets `192.168.100.27` as DNS.

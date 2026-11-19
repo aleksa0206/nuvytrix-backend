@@ -56,7 +56,6 @@ export type AuditAction =
   | 'router.wifi_radio_changed'
   | 'router.led_changed'
   | 'router.reboot_requested'
-  | 'router.dhcp_dns_changed'
   | 'router.diagnostics_run'
   | 'router.device_access_changed'
   | 'router.wifi_wps_changed'
