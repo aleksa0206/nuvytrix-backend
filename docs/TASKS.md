@@ -3,10 +3,6 @@
 Redosled je redosled rada. „Zavisi od“ kaže šta mora biti gotovo pre taska.
 Status: ⬜ nije počet · 🟨 u radu · ✅ gotovo · ⛔ čeka odobrenje
 
-
-### NVX-29 – Firewall na serveru ✅
-ufw uključen 2026-11-19 (`deploy/firewall/ufw-setup.sh`, docs/firewall.md): otvoreni samo SSH (LAN, Tailscale), Tailscale, AdGuard DNS/DHCP/admin na LAN-u i web → API. Sajtovi idu kroz Cloudflare tunele, ništa im ne treba. Provereno: svih 11 ciljeva radi.
-
 ---
 
 ## Faza 1 – Audit
@@ -183,6 +179,9 @@ Router → Maintenance: upisati `reboot`, dugme; samo ručno, 10 min pauza, audi
 
 ### NVX-28 – Nuvytrix i AdGuard DHCP ✅
 Od 2026-11-19 adrese deli AdGuard (ruterov DHCP isključen). Router → DHCP prikazuje AdGuard-ov DHCP iznad ruterovog (`GET /dns/dhcp`, samo čitanje: opseg, lease-ovi, fiksne adrese, imena po Nuvytrix uređajima). Otkrivanje uređaja dopunjava ime iz DHCP lease-a (po MAC adresi) kad nmap ne nađe ime. Alarm „AdGuard DHCP is off“ (provera na 5 min, jednom dok traje, „is on again“ kad se vrati). Integrations: nova linija „AdGuard Home (DHCP)“. AdGuard image fiksiran na `v0.107.80`.
+
+### NVX-29 – Firewall na serveru ✅
+ufw uključen 2026-11-19 (`deploy/firewall/ufw-setup.sh`, docs/firewall.md): otvoreni samo SSH (LAN, Tailscale), Tailscale, AdGuard DNS/DHCP/admin na LAN-u i web → API. Sajtovi idu kroz Cloudflare tunele, ništa im ne treba. Provereno: svih 11 ciljeva radi.
 
 ---
 
