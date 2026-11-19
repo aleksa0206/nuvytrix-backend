@@ -76,6 +76,26 @@ What remains possible:
 
 The Nuvytrix switch for this (added 2026-11-17) was removed again, since it can never succeed here.
 
+## AdGuard as the home's DHCP server (approved 2026-11-19)
+
+Because the router locks the DHCP DNS fields, AdGuard hands out the addresses instead: then every
+device that joins gets AdGuard as DNS by itself.
+
+| Step | Who | What |
+| --- | --- | --- |
+| 1 | owner, `sudo bash deploy/adguard/host-setup.sh` | fixed address 192.168.100.27 on enp4s0 (`netplan try`), ufw opens 53/67/3000 on enp4s0 |
+| 2 | Claude | AdGuard to the host network (`docker-compose.yml`), DNS and admin bound to 192.168.100.27 |
+| 3 | Claude | AdGuard DHCP configured, still off: enp4s0, gateway 192.168.100.1, /24, range .30–.254, lease 1 day; the admin PC keeps .2 as a static lease |
+| 4 | owner + Claude, together, TV on | router: LAN → DHCP Server, untick **Enable Primary DHCP Server**, Apply; AdGuard DHCP on right after; check the TV, reconnect a phone |
+
+**Rollback (one minute):** tick **Enable Primary DHCP Server** again on the router, Apply; turn
+AdGuard DHCP off (AdGuard → Settings → DHCP). Devices are back on the router at their next renewal or
+reconnect.
+
+**Known limits:** if the server is down, newly joining devices get no address (others keep theirs
+until the lease ends, up to a day); devices preferring the router's IPv6 DNS (`fe80::1`) still bypass
+AdGuard for some queries (see Bypasses). The router's L2 relay (TV ports) is not touched.
+
 ## Whole-home DNS proposal (NVX-17, not applied)
 
 Target: every DHCP client gets `192.168.100.27` as DNS.
