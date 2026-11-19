@@ -38,6 +38,28 @@ export interface AdGuardQueryLogEntry {
   upstream?: string;
 }
 
+export interface AdGuardDhcpLease {
+  mac: string;
+  ip: string;
+  hostname: string;
+  /** Only on dynamic leases, e.g. "2026-11-20T18:02:11+01:00". */
+  expires?: string;
+}
+
+export interface AdGuardDhcpStatus {
+  enabled: boolean;
+  interface_name: string;
+  v4?: {
+    gateway_ip: string;
+    subnet_mask: string;
+    range_start: string;
+    range_end: string;
+    lease_duration: number;
+  };
+  leases: AdGuardDhcpLease[] | null;
+  static_leases: AdGuardDhcpLease[] | null;
+}
+
 const REQUEST_TIMEOUT_MS = 5000;
 
 /** Client for the documented AdGuard Home control API (/control/status, /control/stats). */
@@ -61,6 +83,11 @@ export class AdGuardClient {
     if (params.search) query.set('search', params.search);
     if (params.blockedOnly) query.set('response_status', 'blocked');
     return this.get<{ data: AdGuardQueryLogEntry[] }>(`/control/querylog?${query}`);
+  }
+
+  /** Read only: Nuvytrix never changes AdGuard's DHCP settings. */
+  getDhcpStatus(): Promise<AdGuardDhcpStatus> {
+    return this.get<AdGuardDhcpStatus>('/control/dhcp/status');
   }
 
   getUserRules(): Promise<string[]> {

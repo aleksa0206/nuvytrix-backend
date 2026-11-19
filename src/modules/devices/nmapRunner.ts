@@ -5,6 +5,26 @@ export interface HostDiscoverer {
   discover(target: string): Promise<DiscoveredHost[]>;
 }
 
+/**
+ * Fills in the host name a device gave the DHCP server (MAC → name) where nmap found none: with
+ * AdGuard handing out addresses, the router no longer learns names for its reverse lookups.
+ */
+export function withDhcpNames(
+  discoverer: HostDiscoverer,
+  names: () => Promise<Map<string, string>>
+): HostDiscoverer {
+  return {
+    async discover(target) {
+      const [hosts, byMac] = await Promise.all([discoverer.discover(target), names()]);
+      return hosts.map((h) =>
+        h.hostname || !h.macAddress
+          ? h
+          : { ...h, hostname: byMac.get(h.macAddress.toLowerCase()) ?? null }
+      );
+    },
+  };
+}
+
 export interface NmapOptions {
   nmapPath: string;
   timeoutSeconds: number;

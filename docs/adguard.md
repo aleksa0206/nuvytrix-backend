@@ -5,7 +5,7 @@
 | Item | Value |
 | --- | --- |
 | Where | Ubuntu server, separate compose project `adguard` (`deploy/adguard/docker-compose.yml`), so a Nuvytrix deploy never restarts DNS |
-| Version | `adguard/adguardhome:latest`, v0.107.80 at install |
+| Version | pinned `adguard/adguardhome:v0.107.80` (since 2026-11-19). Upgrade by hand: change the tag, `docker compose -p adguard up -d`, then check DNS, DHCP and the `ss -lntup` binding |
 | DNS | `192.168.100.27:53` UDP and TCP, LAN address only (not 0.0.0.0, not Tailscale, never forwarded on the router). `systemd-resolved` (127.0.0.53/54) and libvirt's dnsmasq (192.168.122.1) are untouched |
 | Admin UI | `http://192.168.100.27:3000`, LAN only |
 | Credentials | user `nuvytrix`, password generated on the server and stored only in `~/nuvytrix/nuvytrix-backend/.env` (`ADGUARD_PASSWORD`); Nuvytrix uses the same account |
@@ -108,6 +108,12 @@ IPv6 rollback: DHCPv6 Server → DNS Source back to **DNS agent**, Apply.
 **Rollback (one minute):** tick **Enable Primary DHCP Server** again on the router, Apply; turn
 AdGuard DHCP off (AdGuard → Settings → DHCP). Devices are back on the router at their next renewal or
 reconnect.
+
+**In Nuvytrix (NVX-28):** Router → DHCP shows AdGuard's DHCP (read only, `GET /api/dns/dhcp`)
+above the router's own panel. Discovery takes a device's host name from its AdGuard lease when nmap
+finds none (the router no longer learns names). Every 5 minutes Nuvytrix checks that AdGuard's DHCP
+is on: alert "AdGuard DHCP is off" once while it lasts, "is on again" when it is back. Nuvytrix
+never changes AdGuard's DHCP settings.
 
 **Known limits:** if the server is down, newly joining devices get no address (others keep theirs
 until the lease ends, up to a day); devices preferring the router's IPv6 DNS (`fe80::1`) still bypass

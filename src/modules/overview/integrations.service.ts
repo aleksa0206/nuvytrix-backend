@@ -49,6 +49,7 @@ export class IntegrationsService {
       ['Port scans', () => this.portScans()],
       ['Monitoring checks', () => this.monitoring()],
       ['AdGuard Home (DNS)', () => this.dns()],
+      ['AdGuard Home (DHCP)', () => this.dhcp()],
       ['Docker', async () => this.docker()],
       ['PostgreSQL', async () => this.postgres()],
       ['SSH log', async () => this.sshLog()],
@@ -180,6 +181,25 @@ export class IntegrationsService {
       lastSuccessAt: new Date(),
       detail: `${s.version}${s.protectionEnabled ? '' : ', protection off'}`,
       error: null,
+    };
+  }
+
+  private async dhcp() {
+    if (!this.deps.dns.configured)
+      return {
+        state: 'off' as const,
+        lastSuccessAt: null,
+        detail: 'ADGUARD_URL not set',
+        error: null,
+      };
+    const d = await this.deps.dns.dhcp();
+    return {
+      state: d.enabled ? ('ok' as const) : ('error' as const),
+      lastSuccessAt: new Date(),
+      detail: d.enabled
+        ? `${d.leases.length} leases, ${d.staticLeases.length} static, ${d.rangeStart}–${d.rangeEnd}`
+        : 'DHCP server off',
+      error: d.enabled ? null : 'Devices that join the network get no address',
     };
   }
 

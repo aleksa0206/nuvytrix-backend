@@ -26,7 +26,9 @@ export type AlertKind =
   | 'ssh_new_source'
   | 'ssh_failures'
   | 'high_latency'
-  | 'backup_failed';
+  | 'backup_failed'
+  | 'dhcp_off'
+  | 'dhcp_on';
 export type AlertSeverity = 'info' | 'warning' | 'error';
 
 interface AlertRow {

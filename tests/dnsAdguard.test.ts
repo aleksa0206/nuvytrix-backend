@@ -1,8 +1,10 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../src/config/db';
-import { resetContainer } from '../src/container';
+import { container, resetContainer } from '../src/container';
+import { withDhcpNames } from '../src/modules/devices/nmapRunner';
 import {
   AdGuardClient,
+  type AdGuardDhcpStatus,
   type AdGuardQueryLogEntry,
   type AdGuardStats,
 } from '../src/modules/dns/adguardClient';
@@ -10,6 +12,7 @@ import { closeDatabase, prepareDatabase, signedInAgent } from './helpers/testDb'
 
 class FakeAdGuard extends AdGuardClient {
   rules = ['! comment', '||ads.example^', 'some-custom-rule$important'];
+  dhcpEnabled = true;
   constructor() {
     super({ url: 'http://adguard.test', username: 'u', password: 'p' });
   }
@@ -47,6 +50,24 @@ class FakeAdGuard extends AdGuardClient {
           upstream: 'https://dns.quad9.net:443/dns-query',
         },
       ],
+    };
+  }
+  override async getDhcpStatus(): Promise<AdGuardDhcpStatus> {
+    return {
+      enabled: this.dhcpEnabled,
+      interface_name: 'enp4s0',
+      v4: {
+        gateway_ip: '192.168.100.1',
+        subnet_mask: '255.255.255.0',
+        range_start: '192.168.100.30',
+        range_end: '192.168.100.254',
+        lease_duration: 86400,
+      },
+      leases: [
+        { mac: 'AA:BB:CC:00:00:99', ip: '192.168.100.99', hostname: 'phone', expires: 'e99' },
+        { mac: 'aa:bb:cc:00:00:50', ip: '192.168.100.50', hostname: '', expires: 'e50' },
+      ],
+      static_leases: [{ mac: 'aa:bb:cc:00:00:02', ip: '192.168.100.2', hostname: 'pc' }],
     };
   }
   override async getUserRules() {
@@ -125,5 +146,71 @@ describe('AdGuard Home integration', () => {
     }
     const audit = await db('audit_logs').whereIn('action', ['dns.rule_added', 'dns.rule_removed']);
     expect(audit).toHaveLength(2);
+  });
+
+  it('shows AdGuard DHCP leases sorted by address and named after devices', async () => {
+    const agent = await signedInAgent();
+    const { body } = await agent.get('/api/dns/dhcp');
+    expect(body).toMatchObject({
+      enabled: true,
+      rangeStart: '192.168.100.30',
+      leaseSeconds: 86400,
+    });
+    expect(body.leases).toEqual([
+      {
+        mac: 'aa:bb:cc:00:00:50',
+        ip: '192.168.100.50',
+        hostname: null,
+        deviceName: 'Laptop',
+        expires: 'e50',
+      },
+      {
+        mac: 'aa:bb:cc:00:00:99',
+        ip: '192.168.100.99',
+        hostname: 'phone',
+        deviceName: null,
+        expires: 'e99',
+      },
+    ]);
+    expect(body.staticLeases).toHaveLength(1);
+  });
+
+  it('alerts once while AdGuard DHCP is off and once when it is back', async () => {
+    adguard.dhcpEnabled = false;
+    await container.dnsService.checkDhcp();
+    await container.dnsService.checkDhcp();
+    adguard.dhcpEnabled = true;
+    await container.dnsService.checkDhcp();
+    await container.dnsService.checkDhcp();
+    const alerts = await db('alerts').orderBy('id');
+    expect(alerts.map((a) => [a.kind, a.resolved_at !== null])).toEqual([
+      ['dhcp_off', true],
+      ['dhcp_on', false],
+    ]);
+  });
+
+  it('fills missing discovery host names from DHCP leases, never overrides nmap names', async () => {
+    const discoverer = withDhcpNames(
+      {
+        discover: async () => [
+          {
+            ipAddress: '192.168.100.99',
+            macAddress: 'aa:bb:cc:00:00:99',
+            vendor: null,
+            hostname: null,
+          },
+          {
+            ipAddress: '192.168.100.2',
+            macAddress: 'AA:BB:CC:00:00:02',
+            vendor: null,
+            hostname: 'desk',
+          },
+          { ipAddress: '192.168.100.7', macAddress: null, vendor: null, hostname: null },
+        ],
+      },
+      () => container.dnsService.dhcpHostnames()
+    );
+    const names = (await discoverer.discover('x')).map((h) => h.hostname);
+    expect(names).toEqual(['phone', 'desk', null]);
   });
 });

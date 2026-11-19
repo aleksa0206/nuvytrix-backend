@@ -5,13 +5,15 @@
 #
 # Host network, because AdGuard is also the home's DHCP server (DHCP needs the LAN broadcast).
 # AdGuardHome.yaml binds DNS (53) and the admin UI (3000) to the LAN address 192.168.100.27 only:
-# not 0.0.0.0, not the Tailscale address, never forwarded on the router. ufw allows 53/67/3000 on
-# enp4s0 only (host-setup.sh). Data lives in ./data (not in git). Recovery: docs/adguard.md.
+# not 0.0.0.0, not the Tailscale address, never forwarded on the router. The ufw rules for
+# 53/67/3000 on enp4s0 (host-setup.sh) only take effect once ufw is enabled; it is inactive. Data lives in ./data (not in git). Recovery: docs/adguard.md.
 name: adguard
 
 services:
   adguard:
-    image: adguard/adguardhome:latest
+    # Pinned: an update must not change DHCP or binding behaviour unseen. Upgrade by hand after
+    # reading the release notes (docs/adguard.md). Same image as the one running on 2026-11-19.
+    image: adguard/adguardhome:v0.107.80
     restart: unless-stopped
     network_mode: host
     # DHCP needs raw sockets and the privileged ports 53/67; NET_ADMIN is not granted (it would

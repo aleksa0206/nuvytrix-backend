@@ -40,6 +40,7 @@ describe('integration health', () => {
       'Port scans',
       'Monitoring checks',
       'AdGuard Home (DNS)',
+      'AdGuard Home (DHCP)',
       'Docker',
       'PostgreSQL',
       'SSH log',

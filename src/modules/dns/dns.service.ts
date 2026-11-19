@@ -5,7 +5,11 @@ import { z } from 'zod';
 import { AppError } from '../../common/errors/AppError';
 import type { RequestContext } from '../auth/auth.types';
 import type { AuditService } from '../audit/audit.service';
-import type { AdGuardClient, TopList } from './adguardClient';
+import type { AlertsService } from '../alerts/alerts.service';
+import type { AdGuardClient, AdGuardDhcpLease, TopList } from './adguardClient';
+
+const DHCP_ALERT_KEY = 'adguard:dhcp';
+const ipSort = (ip: string) => ip.split('.').reduce((n, part) => n * 256 + Number(part), 0);
 
 /** A domain for an allow or block rule: hostname labels only, so it cannot inject rule syntax. */
 export const dnsRuleSchema = z.object({
@@ -36,8 +40,82 @@ export class DnsService {
     private adguard: AdGuardClient,
     private auditService?: AuditService,
     /** IP → device name, to show clients by name. */
-    private names: (ips: string[]) => Promise<Map<string, string>> = async () => new Map()
+    private names: (ips: string[]) => Promise<Map<string, string>> = async () => new Map(),
+    private alerts?: AlertsService
   ) {}
+
+  /**
+   * AdGuard hands out the home's addresses (the router's DHCP is off since 2026-11-19), read only.
+   * Leases are named after the Nuvytrix device that holds the address.
+   */
+  async dhcp() {
+    const s = await this.call(() => this.adguard.getDhcpStatus());
+    const leases = s.leases ?? [];
+    const statics = s.static_leases ?? [];
+    const names = await this.names([...new Set([...leases, ...statics].map((l) => l.ip))]);
+    const lease = (l: AdGuardDhcpLease) => ({
+      mac: l.mac.toLowerCase(),
+      ip: l.ip,
+      hostname: l.hostname || null,
+      deviceName: names.get(l.ip) ?? null,
+      expires: l.expires ?? null,
+    });
+    return {
+      enabled: s.enabled,
+      interface: s.interface_name || null,
+      gateway: s.v4?.gateway_ip || null,
+      subnetMask: s.v4?.subnet_mask || null,
+      rangeStart: s.v4?.range_start || null,
+      rangeEnd: s.v4?.range_end || null,
+      leaseSeconds: s.v4?.lease_duration ?? null,
+      leases: leases.map(lease).sort((a, b) => ipSort(a.ip) - ipSort(b.ip)),
+      staticLeases: statics.map(lease).sort((a, b) => ipSort(a.ip) - ipSort(b.ip)),
+    };
+  }
+
+  /** MAC → host name the device sent to AdGuard's DHCP; empty when AdGuard is off or unreachable. */
+  async dhcpHostnames(): Promise<Map<string, string>> {
+    if (!this.adguard.isConfigured) return new Map();
+    try {
+      const s = await this.adguard.getDhcpStatus();
+      return new Map(
+        [...(s.leases ?? []), ...(s.static_leases ?? [])]
+          .filter((l) => l.hostname)
+          .map((l) => [l.mac.toLowerCase(), l.hostname])
+      );
+    } catch {
+      return new Map();
+    }
+  }
+
+  /**
+   * Alerts when AdGuard answers but its DHCP is off: devices that join then get no address.
+   * AdGuard not answering at all is already the "AdGuard DNS" monitoring target's alert.
+   */
+  async checkDhcp(): Promise<void> {
+    if (!this.alerts || !this.adguard.isConfigured) return;
+    let enabled: boolean;
+    try {
+      enabled = (await this.adguard.getDhcpStatus()).enabled;
+    } catch {
+      return;
+    }
+    if (!enabled) {
+      await this.alerts.raise(
+        'dhcp_off',
+        'error',
+        'AdGuard DHCP is off: devices that join the network get no address',
+        {},
+        DHCP_ALERT_KEY
+      );
+    } else if (await this.alerts.resolve(DHCP_ALERT_KEY)) {
+      await this.alerts.raise('dhcp_on', 'info', 'AdGuard DHCP is on again');
+    }
+  }
+
+  get configured(): boolean {
+    return this.adguard.isConfigured;
+  }
 
   private requireConfigured() {
     if (!this.adguard.isConfigured) throw new ServiceUnavailableError(ErrorCode.DNS_NOT_CONFIGURED);

@@ -35,6 +35,23 @@ router.get(
     res.json(await container.dnsService.getStatus());
   })
 );
+/**
+ * @swagger
+ * /dns/dhcp:
+ *   get:
+ *     summary: AdGuard Home's DHCP server (read only) - pool, leases and static leases
+ *     tags: [DNS]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: DHCP state }
+ *       503: { description: Not configured or unreachable }
+ */
+router.get(
+  '/dhcp',
+  asyncHandler(async (_req, res) => {
+    res.json(await container.dnsService.dhcp());
+  })
+);
 router.get(
   '/stats',
   asyncHandler(async (_req, res) => {

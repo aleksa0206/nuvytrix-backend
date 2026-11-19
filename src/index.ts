@@ -92,6 +92,11 @@ function startBackgroundJobs() {
 
   setInterval(() => void container.portScanService.runScheduledIfDue(), 10 * 60_000).unref();
 
+  // AdGuard hands out the home's addresses; checkDhcp never throws and skips when not configured.
+  const checkDhcp = () => void container.dnsService.checkDhcp();
+  checkDhcp();
+  setInterval(checkDhcp, 5 * 60_000).unref();
+
   if (env.DISCOVERY_INTERVAL_MINUTES > 0) {
     setInterval(
       () => {

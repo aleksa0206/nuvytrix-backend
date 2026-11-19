@@ -14,7 +14,7 @@ import {
   PortScanService,
   type PortScanner,
 } from '../modules/devices/portScan.service';
-import { NmapRunner, type HostDiscoverer } from '../modules/devices/nmapRunner';
+import { NmapRunner, withDhcpNames, type HostDiscoverer } from '../modules/devices/nmapRunner';
 import { FirewallRepository } from '../modules/firewall/firewall.repository';
 import { FirewallService } from '../modules/firewall/firewall.service';
 import { PoliciesRepository } from '../modules/firewall/policies.repository';
@@ -177,12 +177,16 @@ class Container {
     this.devicesRepository = new DevicesRepository(db, ownAddresses);
     this.devicesService = new DevicesService(
       this.devicesRepository,
-      overrides.hostDiscoverer ??
-        new NmapRunner({
-          nmapPath: env.NMAP_PATH,
-          timeoutSeconds: env.SCAN_TIMEOUT_SECONDS,
-          privileged: env.NMAP_PRIVILEGED,
-        }),
+      withDhcpNames(
+        overrides.hostDiscoverer ??
+          new NmapRunner({
+            nmapPath: env.NMAP_PATH,
+            timeoutSeconds: env.SCAN_TIMEOUT_SECONDS,
+            privileged: env.NMAP_PRIVILEGED,
+          }),
+        // Read at scan time: dnsService is created below.
+        () => this.dnsService.dhcpHostnames()
+      ),
       this.auditService,
       {
         allowedCidrs: env.ALLOWED_SCAN_CIDRS,
@@ -245,7 +249,8 @@ class Container {
             .filter((r) => r.custom_name || r.hostname)
             .map((r) => [String(r.ip), String(r.custom_name ?? r.hostname)])
         );
-      }
+      },
+      this.alertsService
     );
 
     this.routerRepository = new RouterRepository(db);
