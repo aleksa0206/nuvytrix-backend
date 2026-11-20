@@ -168,8 +168,8 @@ _2026-11-17: svih 10 integracija proverenih na serveru (backup upozorava za home
 ### NVX-24 – Backup za homewise i portfolio ✅
 `~/homewise/backup.sh` i `~/portfolio/backup.sh` (mysqldump, 30 dana), cron 03:50 i 03:55. Noćni backupi 18. i 19.11. uspeli.
 
-### NVX-25 – Obaveštenja na telefon ✅ (čeka telefon)
-Sopstveni ntfy server (`deploy/ntfy`, docs/notifications.md), svaki alarm ide i na telefon, prijava obavezna. Proveren slanjem i čitanjem. Ostaje: Tailscale + ntfy aplikacija na telefonu, Settings → „Send test notification“.
+### NVX-25 – Obaveštenja na telefon ✅
+Sopstveni ntfy server (`deploy/ntfy`, docs/notifications.md), svaki alarm ide i na telefon, prijava obavezna. Proveren slanjem i čitanjem. Telefon (Android, Tailscale + ntfy) pretplaćen 2026-11-20, probna poruka stigla.
 
 ### NVX-26 – Restart rutera iz aplikacije ✅
 Router → Maintenance: upisati `reboot`, dugme; samo ručno, 10 min pauza, audit pre slanja. Zahtev je ruterov „save and reboot“. Probano 2026-11-19 16:49 (audit `requested` → `sent_no_answer`): ruter se vratio za ~1 min, ruterov IPv4 DNS (ne radio od 18.11. 03:55) ponovo radi, svih 6 sajtova HTTP 200 nakon ~2 min.
