@@ -149,3 +149,13 @@ can do this in the router's web page at `http://192.168.100.1` without a working
 
 **Risk:** if the server is down, the home has no name resolution until the rollback or the server is
 back (see "Single point of failure").
+
+## Rate limit (fixed 2026-11-20 08:50)
+
+AdGuard's default limit is 20 queries per second per client, with IPv4 clients grouped by /24, so
+the whole home LAN shared 20 per second. Since the server resolves through AdGuard (its sites,
+Nuvytrix, phones on the Tailscale exit node), it went over it every minute: AdGuard dropped
+queries, systemd-resolved fell back to the router and the watchdog moved it back. The 03:50 alert
+"AdGuard DNS is not answering" was the same cause. Now: `ratelimit_subnet_len_ipv4: 32` (each
+device counts on its own) and `ratelimit_whitelist: [127.0.0.1, 192.168.100.27]`; the limit stays
+20 per second per device.
