@@ -98,3 +98,11 @@ sees a 172.x destination, which rule 4020/4025 sent into table 51 (Mullvad). Fix
 4010/4015: `lookup main suppress_prefixlength 0`, so every destination the main table has a
 specific route for (LAN, Docker networks, libvirt) stays local and only traffic that would use the
 default route goes to table 51.
+
+**Correction 2026-11-20 11:50:** the watchdog's `dns_prefer_adguard` never worked (`resolvectl dns`
+is refused on a link managed by networkd: "Link enp4s0 is managed"); resolved returned to AdGuard
+by itself. The real cause of the switching was AdGuard's rate limit dropping the server's bursts
+(about 15 queries at once when Nuvytrix checks the sites every minute), even with the server on
+the rate-limit whitelist. Fixed in AdGuard: `ratelimit: 300` per device (`ratelimit_subnet_len_ipv4:
+32`), `upstream_mode: parallel`, `cache_optimistic: true`. Burst test: 16/56 queries lost before,
+0/56 after; no switch to the router in the following minutes. The function was removed.

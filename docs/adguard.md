@@ -157,5 +157,6 @@ the whole home LAN shared 20 per second. Since the server resolves through AdGua
 Nuvytrix, phones on the Tailscale exit node), it went over it every minute: AdGuard dropped
 queries, systemd-resolved fell back to the router and the watchdog moved it back. The 03:50 alert
 "AdGuard DNS is not answering" was the same cause. Now: `ratelimit_subnet_len_ipv4: 32` (each
-device counts on its own) and `ratelimit_whitelist: [127.0.0.1, 192.168.100.27]`; the limit stays
-20 per second per device.
+device counts on its own) and `ratelimit_whitelist: [127.0.0.1, 192.168.100.27]`. The whitelist did not
+stop the drops (burst test 16/56 lost), so at 11:50 the limit was raised to 300 per second per device,
+with parallel upstreams and optimistic caching (0/56 lost).

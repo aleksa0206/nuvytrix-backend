@@ -9,7 +9,6 @@ set -euo pipefail
 LAN=192.168.100.0/24
 IF=enp4s0
 ROUTER=192.168.100.1
-ADGUARD=192.168.100.27
 WG=mullvad
 TABLE=51
 PROBE_TABLE=50 # always the tunnel: probes must never leave unencrypted
@@ -25,18 +24,6 @@ probe_route() {
   [ -n "$w" ] || return 0
   ip rule show priority 4030 | grep -q . || ip rule add priority 4030 from "$w" lookup "$PROBE_TABLE"
   ip route replace default dev "$WG" table "$PROBE_TABLE"
-}
-# The server resolves through AdGuard first and the router second (netplan). systemd-resolved stays
-# on the router after one AdGuard hiccup; move it back as soon as AdGuard answers again. Phones on
-# the Tailscale exit node use this resolver too.
-dns_prefer_adguard() {
-  local cur
-  cur=$(resolvectl status "$IF" 2>/dev/null | sed -n 's/^ *Current DNS Server: //p')
-  [ -z "$cur" ] || [ "$cur" = "$ADGUARD" ] && return 0
-  nslookup -timeout=2 example.com "$ADGUARD" >/dev/null 2>&1 || return 0
-  resolvectl dns "$IF" "$ADGUARD"
-  resolvectl dns "$IF" "$ADGUARD" "$ROUTER"
-  logger -t nuvytrix-vpn "server DNS was on $cur, back on AdGuard"
 }
 wg_ip() { ip -4 -o addr show dev "$WG" 2>/dev/null | awk '{print $4}' | cut -d/ -f1; }
 ipt() { iptables -t "$1" -C "${@:2}" 2>/dev/null || iptables -t "$1" -A "${@:2}"; }
@@ -137,7 +124,7 @@ check() {
 }
 
 case "${1:-}" in
-  check) check; dns_prefer_adguard ;;
+  check) check ;;
   up) up ;;
   down) down ;;
   *) echo "usage: $0 up|down|check"; exit 2 ;;
