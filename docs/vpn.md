@@ -91,3 +91,10 @@ server) after one AdGuard hiccup, so the server's own lookups, and those of phon
 node, skipped AdGuard. The watchdog now moves resolved back to AdGuard within 15 s whenever AdGuard
 answers (`dns_prefer_adguard` in gateway.sh). Tailscale DNS: nameserver 192.168.100.27 with "Use
 with exit node" (admin console), "Override DNS servers" off.
+
+**Incident 2026-11-20 01:10:** Nuvytrix (8086) and ntfy (8090) did not open from the LAN or over
+Tailscale. Docker reaches published ports by DNAT to its bridge networks; the routing decision then
+sees a 172.x destination, which rule 4020/4025 sent into table 51 (Mullvad). Fixed with rules
+4010/4015: `lookup main suppress_prefixlength 0`, so every destination the main table has a
+specific route for (LAN, Docker networks, libvirt) stays local and only traffic that would use the
+default route goes to table 51.

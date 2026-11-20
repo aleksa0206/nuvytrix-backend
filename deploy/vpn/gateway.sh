@@ -62,16 +62,20 @@ write_state() { # mode reason
 }
 
 add_rules() {
-  # Order: bypass devices (4000), LAN-to-LAN (4010), the rest of the forwarded LAN traffic (4020);
+  # Order: bypass devices (4000), local and Docker destinations (4010/4015), the rest (4020/4025);
   # the tunnel's own address (4030, table 50: always the tunnel) for the watchdog's probes. Traffic to the server itself
   # is matched by the local table first and never reaches these rules.
-  rules_flush 4000; rules_flush 4010; rules_flush 4020; rules_flush 4025; rules_flush 4030
+  rules_flush 4000; rules_flush 4010; rules_flush 4015; rules_flush 4020; rules_flush 4025; rules_flush 4030
   if [ -f "$BYPASS" ]; then
     grep -Eo '^192\.168\.100\.[0-9]{1,3}' "$BYPASS" | while read -r ip; do
       ip rule add priority 4000 iif "$IF" from "$ip" lookup main
     done
   fi
-  ip rule add priority 4010 iif "$IF" from "$LAN" to "$LAN" lookup main
+  # Anything the main table has a specific route for stays local: the LAN itself, and the Docker
+  # networks behind published ports (Nuvytrix 8086, ntfy 8090), which Docker reaches by DNAT. Only
+  # traffic that would use the main default route goes on to table 51.
+  ip rule add priority 4010 iif "$IF" lookup main suppress_prefixlength 0
+  ip rule add priority 4015 iif tailscale0 lookup main suppress_prefixlength 0
   ip rule add priority 4020 iif "$IF" from "$LAN" lookup "$TABLE"
   # Phones using the server as Tailscale exit node go out the same way (Tailscale masquerades
   # them itself); table 51 keeps the LAN route, so they still reach home devices.
@@ -92,7 +96,7 @@ up() {
 }
 
 down() {
-  rules_flush 4000; rules_flush 4010; rules_flush 4020; rules_flush 4025; rules_flush 4030
+  rules_flush 4000; rules_flush 4010; rules_flush 4015; rules_flush 4020; rules_flush 4025; rules_flush 4030
   ip route flush table "$TABLE" 2>/dev/null || true
   ip route flush table "$PROBE_TABLE" 2>/dev/null || true
   iptd nat POSTROUTING -s "$LAN" -o "$WG" -j MASQUERADE
@@ -106,7 +110,7 @@ check() {
   local w ok=0 hs now fails
   # systemd-networkd removes rules it did not create when it reconfigures the link (e.g. netplan
   # apply); put them back within one check.
-  if ! ip rule show priority 4020 | grep -q . || ! ip route show table "$TABLE" | grep -q "^$LAN"; then
+  if ! ip rule show priority 4015 | grep -q . || ! ip rule show priority 4020 | grep -q . || ! ip route show table "$TABLE" | grep -q "^$LAN"; then
     add_rules
     logger -t nuvytrix-vpn "routing rules were missing, restored"
   fi
