@@ -4,6 +4,8 @@
 #   down   removes them; devices using the server as gateway then go out directly
 #   check  watchdog: table 51 default through the tunnel while it works, else via the router
 # Devices listed in /etc/nuvytrix-vpn-bypass (one LAN IPv4 address per line) always go direct.
+# Destinations listed in /etc/nuvytrix-vpn-bypass-dest (IPv4 address or CIDR, # comments) always go
+# direct for every device: sites that block VPN addresses (e.g. KupujemProdajem answers 403).
 set -euo pipefail
 
 LAN=192.168.100.0/24
@@ -17,6 +19,7 @@ FAILS_TO_SWITCH=3
 STATE=/var/log/nuvytrix/vpn.json # read-only for Nuvytrix (adm), like sshd.log
 RUN=/run/nuvytrix-vpn
 BYPASS=/etc/nuvytrix-vpn-bypass
+BYPASS_DEST=/etc/nuvytrix-vpn-bypass-dest
 
 probe_route() {
   local w
@@ -52,10 +55,16 @@ add_rules() {
   # Order: bypass devices (4000), local and Docker destinations (4010/4015), the rest (4020/4025);
   # the tunnel's own address (4030, table 50: always the tunnel) for the watchdog's probes. Traffic to the server itself
   # is matched by the local table first and never reaches these rules.
-  rules_flush 4000; rules_flush 4010; rules_flush 4015; rules_flush 4020; rules_flush 4025; rules_flush 4030
+  rules_flush 4000; rules_flush 4005; rules_flush 4010; rules_flush 4015; rules_flush 4020; rules_flush 4025; rules_flush 4030
   if [ -f "$BYPASS" ]; then
     grep -Eo '^192\.168\.100\.[0-9]{1,3}' "$BYPASS" | while read -r ip; do
       ip rule add priority 4000 iif "$IF" from "$ip" lookup main
+    done
+  fi
+  if [ -f "$BYPASS_DEST" ]; then
+    grep -Eo "^[0-9]{1,3}(\.[0-9]{1,3}){3}(/[0-9]{1,2})?" "$BYPASS_DEST" | while read -r dst; do
+      ip rule add priority 4005 iif "$IF" to "$dst" lookup main
+      ip rule add priority 4005 iif tailscale0 to "$dst" lookup main
     done
   fi
   # Anything the main table has a specific route for stays local: the LAN itself, and the Docker
@@ -83,7 +92,7 @@ up() {
 }
 
 down() {
-  rules_flush 4000; rules_flush 4010; rules_flush 4015; rules_flush 4020; rules_flush 4025; rules_flush 4030
+  rules_flush 4000; rules_flush 4005; rules_flush 4010; rules_flush 4015; rules_flush 4020; rules_flush 4025; rules_flush 4030
   ip route flush table "$TABLE" 2>/dev/null || true
   ip route flush table "$PROBE_TABLE" 2>/dev/null || true
   iptd nat POSTROUTING -s "$LAN" -o "$WG" -j MASQUERADE

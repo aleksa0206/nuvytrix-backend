@@ -106,3 +106,11 @@ by itself. The real cause of the switching was AdGuard's rate limit dropping the
 the rate-limit whitelist. Fixed in AdGuard: `ratelimit: 300` per device (`ratelimit_subnet_len_ipv4:
 32`), `upstream_mode: parallel`, `cache_optimistic: true`. Burst test: 16/56 queries lost before,
 0/56 after; no switch to the router in the following minutes. The function was removed.
+
+**Sites that block VPN addresses (2026-11-22):** KupujemProdajem answers 403 to Mullvad's address
+(checked from the server: 200 direct, 403 through the tunnel). Such sites go in
+`/etc/nuvytrix-vpn-bypass-dest` (IPv4 address or CIDR per line, `#` comments allowed); rule 4005
+sends traffic to them directly via the router for every device, LAN and exit-node phones alike.
+The provider then sees that the home talks to that address. Apply with `sudo nuvytrix-vpn-gateway up`
+(after reinstalling gateway.sh). KupujemProdajem: `92.249.55.25` (www, images, the bare domain); if
+the site changes its address, update the file.
